@@ -1,0 +1,8 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "microkit"
+version = "0.1.0"
+dependencies = ["pydantic", "arq"]

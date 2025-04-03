@@ -13,7 +13,6 @@ class Users(Service):
         self.logger = logging.getLogger("users")
         self.logger.info("Initializing database connection...")
         await Tortoise.init(config=TORTOISE_ORM)
-        await Tortoise.generate_schemas()
         self.logger.info("Database connection initialized.")
 
     # Methods

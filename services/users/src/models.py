@@ -13,6 +13,7 @@ class User(Model):
     id = fields.UUIDField(pk=True, default=uuid.uuid4)
     name = fields.CharField(max_length=100)
     role = fields.CharEnumField(UserRole, default=UserRole.USER)
-
+    created_at = fields.DatetimeField(auto_now_add=True)
+    
     def __str__(self):
         return self.name

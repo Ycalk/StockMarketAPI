@@ -10,6 +10,14 @@ from .logs import default_log_config
 
 
 class Runner:
+    """
+    A class to manage and run service workers with configurable settings.
+    Methods
+    -------
+        run():
+            Starts the worker processes using a process pool executor.
+    """
+    
     def __init__(self,
                  service_class: type[Service],
                  redis_settings: Optional[RedisSettings] = None, 
@@ -21,6 +29,32 @@ class Runner:
                  max_tries: int = 5,
                  retry_jobs: bool = True,
                  logging_config: Optional[dict[str, Any]] = None) -> None:
+        """
+        Runner settings.
+
+        Parameters
+        ----------
+            service_class : type[Service]
+                class of the service to run
+            redis_settings : Optional[RedisSettings]
+                settings for Redis connection
+            workers_count : int
+                number of worker processes to run
+            max_jobs : int
+                maximum number of jobs to process before stopping
+            job_timeout : SecondsTimedelta
+                timeout for each job
+            keep_result : SecondsTimedelta
+                time to keep the result in Redis
+            keep_result_forever : bool
+                whether to keep the result forever
+            max_tries : int
+                maximum number of tries for each job
+            retry_jobs : bool
+                whether to retry failed jobs
+            logging_config : Optional[dict[str, Any]]
+                logging configuration for the service
+        """
         self._queue_name = service_class.__name__.lower()
         self._service = service_class()
         self._redis_settings = redis_settings or RedisSettings()

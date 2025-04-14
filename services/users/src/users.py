@@ -1,11 +1,11 @@
 import logging
 from tortoise import Tortoise
-from .config import TORTOISE_ORM
+from database.config import TORTOISE_ORM
 from microkit.service import Service, service_method
 from arq.connections import ArqRedis
 from shared_models.users import User as UserSharedModel
 from shared_models.users.create_user import CreateUserRequest
-from .models import User
+from database import User
 
 
 class Users(Service):

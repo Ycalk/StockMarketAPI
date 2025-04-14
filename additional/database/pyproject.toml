@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [tool.setuptools]
-packages = ["database"]
+packages = ["database", "database.models"]
 
 [tool.aerich]
 tortoise_orm = "database.config.TORTOISE_ORM"

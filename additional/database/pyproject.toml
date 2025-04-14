@@ -1,8 +1,19 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = [
+    "setuptools",
+    "wheel",
+]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "database"
 version = "0.1.0"
-dependencies = ["pydantic", "arq"]
+dependencies = [
+    "tortoise-orm[asyncpg]",
+    "python-dotenv"
+]
+
+[tool.aerich]
+tortoise_orm = "database.config.TORTOISE_ORM"
+location = "./migrations"
+src_folder = "./."

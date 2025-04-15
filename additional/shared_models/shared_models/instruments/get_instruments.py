@@ -3,4 +3,4 @@ from .instrument import Instrument
 
 
 class GetInstrumentsResponse(BaseModel):
-    __root__: list[Instrument]
+    __pydantic_root_model__: list[Instrument]

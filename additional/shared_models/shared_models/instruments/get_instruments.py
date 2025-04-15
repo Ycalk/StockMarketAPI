@@ -1,6 +1,6 @@
-from pydantic import BaseModel
+from pydantic import RootModel
 from .instrument import Instrument
 
 
-class GetInstrumentsResponse(BaseModel):
-    __pydantic_root_model__: list[Instrument]
+class GetInstrumentsResponse(RootModel):
+    root: list[Instrument]

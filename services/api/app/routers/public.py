@@ -1,5 +1,6 @@
 from fastapi import APIRouter
-from ..models.public import RegisterUserRequest, RegisterUserResponse
+from ..models.public import RegisterUserRequest
+from ..models.user import User as RegisterUserResponse
 from microkit.client import MicroKitClient
 from ..config import RedisConfig
 from shared_models.users import User as UserSharedModel

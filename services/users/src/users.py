@@ -5,6 +5,7 @@ from microkit.service import Service, service_method
 from arq.connections import ArqRedis
 from shared_models.users import User as UserSharedModel
 from shared_models.users.create_user import CreateUserRequest
+from shared_models.users.delete_user import DeleteUserRequest
 from database import User
 
 
@@ -20,5 +21,15 @@ class Users(Service):
     async def create_user(self: "Users", redis: ArqRedis, request: CreateUserRequest) -> UserSharedModel:
         user = await User.create(**request.model_dump(exclude_unset=True))
         self.logger.info(f"User created with ID: {user.id}")
+        return UserSharedModel.model_validate(user)
+    
+    @service_method
+    async def delete_user(self: "Users", redis: ArqRedis, request: DeleteUserRequest) -> UserSharedModel:
+        user = await User.get_or_none(id=request.id)
+        if not user:
+            self.logger.warning(f"User with ID {request.id} not found.")
+            raise ValueError(f"User with ID {request.id} not found.")
+        await user.delete()
+        self.logger.info(f"User with ID {request.id} deleted.")
         return UserSharedModel.model_validate(user)
     

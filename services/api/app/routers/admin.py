@@ -6,7 +6,10 @@ from shared_models.instruments import Instrument as InstrumentSharedModel
 from shared_models.instruments.delete_instrument import DeleteInstrumentRequest, DeleteInstrumentResponse
 from shared_models.users import User as UserSharedModel
 from shared_models.users.delete_user import DeleteUserRequest
+from shared_models.users.deposit import DepositRequest
+from shared_models.users.withdraw import WithdrawRequest
 from ..models.user import User as DeleteUserResponse
+from ..models.response_status import ResponseStatus
 from uuid import UUID
 
 
@@ -32,9 +35,33 @@ async def create_instrument(request: InstrumentSharedModel):
     return await job.result()
 
 
-@router.delete("/instrument/{ticker}", response_model=DeleteInstrumentResponse)
+@router.delete("/instrument/{ticker}", response_model=DeleteInstrumentResponse, tags=["user"])
 async def delete_instrument(ticker: str):
     job = await instruments_client("delete_instrument", DeleteInstrumentRequest(ticker=ticker))
     if job is None:
         raise ValueError("Job is None")
     return await job.result()
+
+
+@router.post("/balance/deposit", response_model=ResponseStatus, tags=["balance"])
+async def deposit(request: DepositRequest):
+    job = await users_client("deposit", request)
+    if job is None:
+        raise ValueError("Job is None")
+    try:
+        await job.result()
+        return ResponseStatus(success=True)
+    except Exception as e:
+        return ResponseStatus(success=False)
+
+
+@router.post("/balance/withdraw", response_model=ResponseStatus, tags=["balance"])
+async def withdraw(request: WithdrawRequest):
+    job = await users_client("withdraw", request)
+    if job is None:
+        raise ValueError("Job is None")
+    try:
+        await job.result()
+        return ResponseStatus(success=True)
+    except Exception as e:
+        return ResponseStatus(success=False)

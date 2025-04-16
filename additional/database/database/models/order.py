@@ -27,7 +27,7 @@ class Order(Model):
     type = fields.CharEnumField(OrderType)
     status = fields.CharEnumField(OrderStatus, default=OrderStatus.NEW)
     direction = fields.CharEnumField(Direction)
-    instrument = fields.ForeignKeyField("models.Instrument", related_name="orders")
+    instrument = fields.ForeignKeyField("models.Instrument", related_name="orders", on_delete=fields.CASCADE)
     quantity = fields.IntField()
     price = fields.IntField(null=True)
     filled = fields.IntField(default=0)

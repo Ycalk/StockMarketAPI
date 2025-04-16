@@ -1,3 +1,4 @@
+import uuid
 from tortoise import fields
 from tortoise.models import Model
 import enum
@@ -9,7 +10,7 @@ class OperationType(str, enum.Enum):
 
 
 class BalanceHistory(Model):
-    id = fields.UUIDField(pk=True)
+    id = fields.UUIDField(pk=True, default=uuid.uuid4)
     user = fields.ForeignKeyField("models.User", related_name="balance_history")
     instrument = fields.ForeignKeyField("models.Instrument", related_name="balance_history")
     amount = fields.IntField()

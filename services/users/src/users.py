@@ -10,6 +10,7 @@ from shared_models.users.delete_user import DeleteUserRequest
 from shared_models.users.get_user import GetUserRequest
 from shared_models.users.deposit import DepositRequest
 from shared_models.users.withdraw import WithdrawRequest
+from shared_models.users.get_balance import GetBalanceRequest, GetBalanceResponse
 from database import User, BalanceHistory, Balance, Instrument
 from database.models.balance_history import OperationType
 
@@ -167,5 +168,29 @@ class Users(Service):
             f"Successfully withdrawn {request.amount} {request.ticker} "
             f"from user {request.user_id}. New balance: {balance.amount}"
         )
-        
+    
+    @service_method
+    async def get_balance(self: "Users", redis: ArqRedis, request: GetBalanceRequest) -> GetBalanceResponse:
+        async with in_transaction() as conn:
+            try:
+                user = await User.get_or_none(id=request.user_id, using_db=conn)
+                if not user:
+                    error_msg = f"User {request.user_id} not found"
+                    self.logger.warning(error_msg)
+                    raise ValueError(error_msg)
+                
+                balances = await Balance.filter(user=user) \
+                               .prefetch_related("instrument") \
+                               .using_db(conn) \
+                               .all()
+                
+                return GetBalanceResponse(root={
+                    balance.instrument.ticker: balance.amount for balance in balances
+                })
+            except ValueError as ve:
+                self.logger.error(f"Validation error in get_balance: {ve}")
+                raise
+            except Exception as e:
+                self.logger.critical(f"Unexpected error in get_balance: {e}")
+                raise ValueError(f"Get balance operation failed: {str(e)}")
     

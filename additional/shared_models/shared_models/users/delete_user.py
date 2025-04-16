@@ -4,3 +4,6 @@ from uuid import UUID
 
 class DeleteUserRequest(BaseModel):
     id: UUID
+
+
+# Response - .users.User

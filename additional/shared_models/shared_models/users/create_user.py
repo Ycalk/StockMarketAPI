@@ -5,3 +5,6 @@ from .user import UserRole
 class CreateUserRequest(BaseModel):
     name: str
     role: UserRole = UserRole.USER
+    
+
+# Response - .users.User

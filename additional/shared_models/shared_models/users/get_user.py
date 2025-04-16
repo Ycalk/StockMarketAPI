@@ -4,3 +4,6 @@ from uuid import UUID
 
 class GetUserRequest(BaseModel):
     id: UUID
+
+
+# Response - .users.User

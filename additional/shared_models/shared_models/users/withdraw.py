@@ -3,7 +3,7 @@ import re
 from uuid import UUID
 
 
-class DepositRequest(BaseModel):
+class WithdrawRequest(BaseModel):
     user_id: UUID
     ticker: str
     amount: int

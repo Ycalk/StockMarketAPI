@@ -9,6 +9,7 @@ from shared_models.users.create_user import CreateUserRequest
 from shared_models.users.delete_user import DeleteUserRequest
 from shared_models.users.get_user import GetUserRequest
 from shared_models.users.deposit import DepositRequest
+from shared_models.users.withdraw import WithdrawRequest
 from database import User, BalanceHistory, Balance, Instrument
 from database.models.balance_history import OperationType
 
@@ -35,7 +36,7 @@ class Users(Service):
     async def delete_user(self: "Users", redis: ArqRedis, request: DeleteUserRequest) -> UserSharedModel:
         async with in_transaction() as conn:
             try:
-                user = await User.get_or_none(id=request.id)
+                user = await User.filter(id=request.id).select_for_update().using_db(conn).first()
                 if not user:
                     self.logger.warning(f"User with ID {request.id} not found.")
                     raise ValueError(f"User with ID {request.id} not found.")
@@ -110,6 +111,61 @@ class Users(Service):
         self.logger.info(
             f"Successfully deposited {request.amount} {request.ticker} "
             f"to user {request.user_id}. New balance: {balance.amount}"
+        )
+    
+    @service_method
+    async def withdraw(self: "Users", redis: ArqRedis, request: WithdrawRequest):
+        async with in_transaction() as conn:
+            try:
+                user = await User.filter(id=request.user_id).select_for_update().using_db(conn).first()
+                if not user:
+                    error_msg = f"User {request.user_id} not found"
+                    self.logger.warning(error_msg)
+                    raise ValueError(error_msg)
+                
+                instrument = await Instrument.get_or_none(ticker=request.ticker, using_db=conn)
+                if not instrument:
+                    error_msg = f"Instrument {request.ticker} not found"
+                    self.logger.warning(error_msg)
+                    raise ValueError(error_msg)
+                
+                balance = await Balance.get_or_none(
+                    user=user,
+                    instrument=instrument,
+                    using_db=conn
+                )
+                
+                if not balance:
+                    error_msg = f"Balance for user {request.user_id} and instrument {request.ticker} not found"
+                    self.logger.warning(error_msg)
+                    raise ValueError(error_msg)
+                
+                if balance.amount < request.amount:
+                    error_msg = f"Insufficient funds for user {request.user_id} in {request.ticker}"
+                    self.logger.warning(error_msg)
+                    raise ValueError(error_msg)
+                
+                balance.amount -= request.amount
+                await balance.save(using_db=conn)
+                
+                await BalanceHistory.create(
+                    user=user,
+                    instrument=instrument,
+                    amount=request.amount,
+                    operation_type=OperationType.WITHDRAW,
+                    using_db=conn
+                )
+                
+            except ValueError as ve:
+                self.logger.error(f"Validation error in withdraw: {ve}")
+                raise
+            except Exception as e:
+                self.logger.critical(f"Unexpected error in withdraw: {e}")
+                raise ValueError(f"Withdraw operation failed: {str(e)}")
+
+        self.logger.info(
+            f"Successfully withdrawn {request.amount} {request.ticker} "
+            f"from user {request.user_id}. New balance: {balance.amount}"
         )
         
     

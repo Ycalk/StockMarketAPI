@@ -3,7 +3,7 @@ from tortoise.models import Model
 
 
 class Balance(Model):
-    user = fields.ForeignKeyField("models.User", related_name="balances")
+    user = fields.ForeignKeyField("models.User", related_name="balances", on_delete=fields.CASCADE)
     instrument = fields.ForeignKeyField("models.Instrument", related_name="balances")
     amount = fields.IntField()
 

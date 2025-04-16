@@ -10,7 +10,7 @@ class OperationType(str, enum.Enum):
 
 class BalanceHistory(Model):
     id = fields.UUIDField(pk=True)
-    user = fields.ForeignKeyField("models.User", related_name="balance_history")
+    user = fields.ForeignKeyField("models.User", related_name="balance_history", on_delete=fields.CASCADE)
     instrument = fields.ForeignKeyField("models.Instrument", related_name="balance_history")
     amount = fields.IntField()
     operation_type = fields.CharEnumField(OperationType)

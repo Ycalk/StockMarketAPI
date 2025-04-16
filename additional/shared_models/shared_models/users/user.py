@@ -2,9 +2,11 @@ from pydantic import BaseModel, ConfigDict
 from enum import Enum
 from uuid import UUID
 
+
 class UserRole(str, Enum):
-    USER = "user"
-    ADMIN = "admin"
+    USER = "USER"
+    ADMIN = "ADMIN"
+
 
 class User(BaseModel):
     id: UUID

@@ -10,11 +10,12 @@ name = "database"
 version = "0.1.0"
 dependencies = [
     "tortoise-orm[asyncpg]",
-    "python-dotenv"
+    "python-dotenv",
+    "aerich"
 ]
 
 [tool.setuptools]
-packages = ["database"]
+packages = ["database", "database.models"]
 
 [tool.aerich]
 tortoise_orm = "database.config.TORTOISE_ORM"

@@ -1,7 +1,7 @@
 from uuid import UUID
 from pydantic import BaseModel, model_validator
 from shared_models.users.user import UserRole
-from ..services.token import generate_api_key
+from ..services.token import generate_user_api_key
 
 
 class User(BaseModel):
@@ -13,5 +13,5 @@ class User(BaseModel):
     @model_validator(mode='before')
     def autofill_api_key(cls, data: dict):
         if 'api_key' not in data:
-            data['api_key'] = generate_api_key(data['id'])
+            data['api_key'] = generate_user_api_key(data['id'])
         return data

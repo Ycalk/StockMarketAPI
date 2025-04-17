@@ -6,6 +6,7 @@ load_dotenv()
 
 
 class ApiServiceConfig:
+    API_NAME = 'Stock Market API'
     BASE_PREFIX = '/api/v1'
     DEFAULT_RESPONSE: Dict[Union[int,str], Dict[str, Any]] = {200: {"description": "Successful Response"}}
 

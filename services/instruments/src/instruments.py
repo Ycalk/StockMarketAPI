@@ -1,12 +1,12 @@
 import logging
 from tortoise import Tortoise
+from tortoise.transactions import in_transaction
 from database.config import TORTOISE_ORM
 from microkit.service import Service, service_method
 from arq.connections import ArqRedis
 from shared_models.instruments.get_instruments import GetInstrumentsResponse
-from shared_models.instruments.add_instrument import AddInstrumentResponse
-from shared_models.instruments.delete_instrument import DeleteInstrumentRequest, DeleteInstrumentResponse
-from shared_models.instruments import Instrument as InstrumentSharedModel
+from shared_models.instruments.add_instrument import AddInstrumentRequest
+from shared_models.instruments.delete_instrument import DeleteInstrumentRequest
 from database import Instrument
 
 
@@ -24,22 +24,29 @@ class Instruments(Service):
         return GetInstrumentsResponse.model_validate(instruments)
     
     @service_method
-    async def add_instrument(self: "Instruments", redis: ArqRedis, request: InstrumentSharedModel) -> AddInstrumentResponse:
+    async def add_instrument(self: "Instruments", redis: ArqRedis, request: AddInstrumentRequest) -> None:
         try:
-            instrument = await Instrument.create(**request.model_dump(exclude_unset=True))
+            instrument = await Instrument.create(**request.instrument.model_dump(exclude_unset=True))
             self.logger.info(f"Instrument created with ticker: {instrument.ticker}")
-            return AddInstrumentResponse(success=True)
         except Exception as e:
-            self.logger.error(f"Error creating instrument: {e}")
-            return AddInstrumentResponse(success=False)
+            msg = f"Error creating instrument: {e}"
+            self.logger.error(msg)
+            raise ValueError(msg)
     
     @service_method
-    async def delete_instrument(self: "Instruments", redis: ArqRedis, ticker: DeleteInstrumentRequest) -> DeleteInstrumentResponse:
-        try:
-            instrument = await Instrument.get(ticker=ticker.ticker)
-            await instrument.delete()
-            self.logger.info(f"Instrument deleted with ticker: {ticker.ticker}")
-            return DeleteInstrumentResponse(success=True)
-        except Exception as e:
-            self.logger.error(f"Error deleting instrument: {e}")
-            return DeleteInstrumentResponse(success=False)
+    async def delete_instrument(self: "Instruments", redis: ArqRedis, ticker: DeleteInstrumentRequest) :
+        async with in_transaction() as conn:
+            try:
+                instrument = await Instrument.filter(ticker=ticker.ticker).select_for_update().using_db(conn).first()
+                if not instrument:
+                    self.logger.warning(f"Instrument with ticker {ticker.ticker} not found.")
+                    raise ValueError(f"Instrument with ticker {ticker.ticker} not found.")
+                await instrument.delete(using_db=conn)
+                self.logger.info(f"Instrument deleted with ticker: {ticker.ticker}")
+            except ValueError as ve:
+                self.logger.error(f"Validation error in delete_instrument: {ve}")
+                raise
+            except Exception as e:
+                self.logger.critical(f"Error deleting instrument: {e}")
+                raise ValueError(f"Delete operation failed: {str(e)}")
+        self.logger.info(f"Instrument with ticker {ticker.ticker} deleted.")

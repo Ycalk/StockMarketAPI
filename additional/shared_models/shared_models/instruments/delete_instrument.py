@@ -11,7 +11,3 @@ class DeleteInstrumentRequest(BaseModel):
         if not re.match(r'^[A-Z]{2,10}$', v):
             raise ValueError("Ticker must be uppercase and contain 2 to 10 characters.")
         return v
-
-
-class DeleteInstrumentResponse(BaseModel):
-    success: bool

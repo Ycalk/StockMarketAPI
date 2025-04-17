@@ -9,5 +9,3 @@ class GetBalanceRequest(BaseModel):
 
 class GetBalanceResponse(RootModel):
     root: Dict[str, int]
-
-# Response - .users.User

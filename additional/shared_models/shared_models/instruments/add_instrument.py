@@ -1,5 +1,6 @@
 from pydantic import BaseModel
+from .instrument import Instrument
 
 
-class AddInstrumentResponse(BaseModel):
-    success: bool
+class AddInstrumentRequest(BaseModel):
+    instrument: Instrument

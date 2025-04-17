@@ -11,6 +11,8 @@ from shared_models.users.get_user import GetUserRequest, GetUserResponse
 from shared_models.users.deposit import DepositRequest
 from shared_models.users.withdraw import WithdrawRequest
 from shared_models.users.get_balance import GetBalanceRequest, GetBalanceResponse
+from shared_models.users.errors import CriticalError, UserNotFoundError, InsufficientFundsError
+from shared_models.instruments.errors import InstrumentNotFoundError
 from database import User, BalanceHistory, Balance, Instrument
 from database.models.balance_history import OperationType
 
@@ -31,7 +33,7 @@ class Users(Service):
             return CreateUserResponse(user=UserSharedModel.model_validate(user))
         except Exception as e:
             self.logger.critical(f"Error creating user: {e}")
-            raise ValueError(f"Error creating user: {e}")
+            raise CriticalError(f"Error creating user: {e}")
     
     @service_method
     async def delete_user(self: "Users", redis: ArqRedis, request: DeleteUserRequest) -> DeleteUserResponse:
@@ -40,17 +42,18 @@ class Users(Service):
                 user = await User.filter(id=request.id).select_for_update().using_db(conn).first()
                 if not user:
                     self.logger.warning(f"User with ID {request.id} not found.")
-                    raise ValueError(f"User with ID {request.id} not found.")
+                    raise UserNotFoundError(str(request.id))
 
                 await user.delete()
                 self.logger.info(f"User with ID {request.id} deleted.")
                 return DeleteUserResponse(user=UserSharedModel.model_validate(user))
-            except ValueError as ve:
-                self.logger.error(f"Validation error in delete_user: {ve}")
+            except UserNotFoundError as nf:
+                self.logger.error(f"Validation error in delete_user: {nf}")
                 raise
             except Exception as e:
-                self.logger.critical(f"Unexpected error in delete_user: {e}")
-                raise ValueError(f"Delete operation failed: {str(e)}")
+                msg = f"Delete operation failed: {e}"
+                self.logger.critical(msg)
+                raise CriticalError(msg)
     
     @service_method
     async def get_user(self: "Users", redis: ArqRedis, request: GetUserRequest) -> GetUserResponse:
@@ -58,14 +61,15 @@ class Users(Service):
             user = await User.get_or_none(id=request.id)
             if not user:
                 self.logger.warning(f"User with ID {request.id} not found.")
-                raise ValueError(f"User with ID {request.id} not found.")
+                raise UserNotFoundError(str(request.id))
             return GetUserResponse(user=UserSharedModel.model_validate(user))
-        except ValueError as ve:
+        except UserNotFoundError as ve:
             self.logger.error(f"Validation error in get_user: {ve}")
             raise
         except Exception as e:
-            self.logger.critical(f"Unexpected error in get_user: {e}")
-            raise ValueError(f"Get operation failed: {str(e)}")
+            msg = f"Get operation failed: {e}"
+            self.logger.critical(msg)
+            raise CriticalError(msg)
     
     @service_method
     async def deposit(self: "Users", redis: ArqRedis, request: DepositRequest):
@@ -73,15 +77,13 @@ class Users(Service):
             try:
                 user = await User.filter(id=request.user_id).select_for_update().using_db(conn).first()
                 if not user:
-                    error_msg = f"User {request.user_id} not found"
-                    self.logger.warning(error_msg)
-                    raise ValueError(error_msg)
+                    self.logger.warning(f"User {request.user_id} not found")
+                    raise UserNotFoundError(str(request.user_id))
                 
                 instrument = await Instrument.get_or_none(ticker=request.ticker, using_db=conn)
                 if not instrument:
-                    error_msg = f"Instrument {request.ticker} not found"
-                    self.logger.warning(error_msg)
-                    raise ValueError(error_msg)
+                    self.logger.warning(f"Instrument {request.ticker} not found")
+                    raise InstrumentNotFoundError(request.ticker)
                 
                 balance, created = await Balance.get_or_create(
                     user=user,
@@ -101,13 +103,13 @@ class Users(Service):
                     operation_type=OperationType.DEPOSIT,
                     using_db=conn
                 )
-                
-            except ValueError as ve:
+            except UserNotFoundError or InstrumentNotFoundError as ve:
                 self.logger.error(f"Validation error in deposit: {ve}")
-                raise
+                raise   
             except Exception as e:
-                self.logger.critical(f"Unexpected error in deposit: {e}")
-                raise ValueError(f"Deposit operation failed: {str(e)}")
+                msg = f"Deposit operation failed: {e}"
+                self.logger.critical(msg)
+                raise CriticalError(msg)
 
         self.logger.info(
             f"Successfully deposited {request.amount} {request.ticker} "
@@ -120,15 +122,13 @@ class Users(Service):
             try:
                 user = await User.filter(id=request.user_id).select_for_update().using_db(conn).first()
                 if not user:
-                    error_msg = f"User {request.user_id} not found"
-                    self.logger.warning(error_msg)
-                    raise ValueError(error_msg)
+                    self.logger.warning(f"User {request.user_id} not found")
+                    raise UserNotFoundError(str(request.user_id))
                 
                 instrument = await Instrument.get_or_none(ticker=request.ticker, using_db=conn)
                 if not instrument:
-                    error_msg = f"Instrument {request.ticker} not found"
-                    self.logger.warning(error_msg)
-                    raise ValueError(error_msg)
+                    self.logger.warning(f"Instrument {request.ticker} not found")
+                    raise InstrumentNotFoundError(request.ticker)
                 
                 balance = await Balance.get_or_none(
                     user=user,
@@ -137,14 +137,12 @@ class Users(Service):
                 )
                 
                 if not balance:
-                    error_msg = f"Balance for user {request.user_id} and instrument {request.ticker} not found"
-                    self.logger.warning(error_msg)
-                    raise ValueError(error_msg)
+                    self.logger.warning(f"Balance for user {request.user_id} and instrument {request.ticker} not found")
+                    raise InsufficientFundsError(str(request.user_id), request.amount, 0)
                 
                 if balance.amount < request.amount:
-                    error_msg = f"Insufficient funds for user {request.user_id} in {request.ticker}"
-                    self.logger.warning(error_msg)
-                    raise ValueError(error_msg)
+                    self.logger.warning(f"Insufficient funds for user {request.user_id} in {request.ticker}")
+                    raise InsufficientFundsError(str(request.user_id), request.amount, balance.amount)
                 
                 balance.amount -= request.amount
                 await balance.save(using_db=conn)
@@ -157,12 +155,13 @@ class Users(Service):
                     using_db=conn
                 )
                 
-            except ValueError as ve:
+            except UserNotFoundError or InstrumentNotFoundError or InsufficientFundsError as ve:
                 self.logger.error(f"Validation error in withdraw: {ve}")
                 raise
             except Exception as e:
-                self.logger.critical(f"Unexpected error in withdraw: {e}")
-                raise ValueError(f"Withdraw operation failed: {str(e)}")
+                msg = f"Withdraw operation failed: {e}"
+                self.logger.critical(msg)
+                raise CriticalError(msg)
 
         self.logger.info(
             f"Successfully withdrawn {request.amount} {request.ticker} "
@@ -175,9 +174,8 @@ class Users(Service):
             try:
                 user = await User.get_or_none(id=request.user_id, using_db=conn)
                 if not user:
-                    error_msg = f"User {request.user_id} not found"
-                    self.logger.warning(error_msg)
-                    raise ValueError(error_msg)
+                    self.logger.warning(f"User {request.user_id} not found")
+                    raise UserNotFoundError(str(request.user_id))
                 
                 balances = await Balance.filter(user=user) \
                                .prefetch_related("instrument") \
@@ -187,10 +185,11 @@ class Users(Service):
                 return GetBalanceResponse(root={
                     balance.instrument.ticker: balance.amount for balance in balances
                 })
-            except ValueError as ve:
+            except UserNotFoundError as ve:
                 self.logger.error(f"Validation error in get_balance: {ve}")
                 raise
             except Exception as e:
-                self.logger.critical(f"Unexpected error in get_balance: {e}")
-                raise ValueError(f"Get balance operation failed: {str(e)}")
+                msg = f"Get balance operation failed: {e}"
+                self.logger.critical(msg)
+                raise CriticalError(msg)
     

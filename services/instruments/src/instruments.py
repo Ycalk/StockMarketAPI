@@ -7,7 +7,7 @@ from arq.connections import ArqRedis
 from shared_models.instruments.get_instruments import GetInstrumentsResponse
 from shared_models.instruments.add_instrument import AddInstrumentRequest
 from shared_models.instruments.delete_instrument import DeleteInstrumentRequest
-from shared_models.instruments.errors import CriticalError, InstrumentAlreadyExists, InstrumentNotFound
+from shared_models.instruments.errors import CriticalError, InstrumentAlreadyExistsError, InstrumentNotFoundError
 from tortoise.exceptions import IntegrityError
 from database import Instrument
 
@@ -35,7 +35,7 @@ class Instruments(Service):
         try:
             instrument = await Instrument.create(**request.instrument.model_dump(exclude_unset=True))
         except IntegrityError as ie:
-            raise InstrumentAlreadyExists(request.instrument.ticker)
+            raise InstrumentAlreadyExistsError(request.instrument.ticker)
         except Exception as e:
             msg = f"Error creating instrument: {e}"
             self.logger.critical(msg)
@@ -48,9 +48,9 @@ class Instruments(Service):
             try:
                 instrument = await Instrument.filter(ticker=request.ticker).select_for_update().using_db(conn).first()
                 if not instrument:
-                    raise InstrumentNotFound(request.ticker)
+                    raise InstrumentNotFoundError(request.ticker)
                 await instrument.delete(using_db=conn)
-            except InstrumentNotFound as ve:
+            except InstrumentNotFoundError as ve:
                 self.logger.error(f"Validation error in delete_instrument: {ve}")
                 raise
             except Exception as e:

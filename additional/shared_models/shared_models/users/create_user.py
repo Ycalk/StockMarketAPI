@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from .user import UserRole
+from .user import UserRole, User
 
 
 class CreateUserRequest(BaseModel):
@@ -7,4 +7,6 @@ class CreateUserRequest(BaseModel):
     role: UserRole = UserRole.USER
     
 
-# Response - .users.User
+class CreateUserResponse(BaseModel):
+    user: User
+    

@@ -21,6 +21,3 @@ class DepositRequest(BaseModel):
         if v <= 0:
             raise ValueError("Amount must be a positive integer.")
         return v
-
-
-# Response - None

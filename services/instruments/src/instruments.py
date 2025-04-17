@@ -34,7 +34,7 @@ class Instruments(Service):
             raise ValueError(msg)
     
     @service_method
-    async def delete_instrument(self: "Instruments", redis: ArqRedis, ticker: DeleteInstrumentRequest) :
+    async def delete_instrument(self: "Instruments", redis: ArqRedis, ticker: DeleteInstrumentRequest) -> None:
         async with in_transaction() as conn:
             try:
                 instrument = await Instrument.filter(ticker=ticker.ticker).select_for_update().using_db(conn).first()

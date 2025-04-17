@@ -5,9 +5,9 @@ from database.config import TORTOISE_ORM
 from microkit.service import Service, service_method
 from arq.connections import ArqRedis
 from shared_models.users import User as UserSharedModel
-from shared_models.users.create_user import CreateUserRequest
-from shared_models.users.delete_user import DeleteUserRequest
-from shared_models.users.get_user import GetUserRequest
+from shared_models.users.create_user import CreateUserRequest, CreateUserResponse
+from shared_models.users.delete_user import DeleteUserRequest, DeleteUserResponse
+from shared_models.users.get_user import GetUserRequest, GetUserResponse
 from shared_models.users.deposit import DepositRequest
 from shared_models.users.withdraw import WithdrawRequest
 from shared_models.users.get_balance import GetBalanceRequest, GetBalanceResponse
@@ -24,17 +24,17 @@ class Users(Service):
 
     # Methods
     @service_method
-    async def create_user(self: "Users", redis: ArqRedis, request: CreateUserRequest) -> UserSharedModel:
+    async def create_user(self: "Users", redis: ArqRedis, request: CreateUserRequest) -> CreateUserResponse:
         try:
             user = await User.create(**request.model_dump(exclude_unset=True))
             self.logger.info(f"User created with ID: {user.id}")
-            return UserSharedModel.model_validate(user)
+            return CreateUserResponse(user=UserSharedModel.model_validate(user))
         except Exception as e:
             self.logger.critical(f"Error creating user: {e}")
             raise ValueError(f"Error creating user: {e}")
     
     @service_method
-    async def delete_user(self: "Users", redis: ArqRedis, request: DeleteUserRequest) -> UserSharedModel:
+    async def delete_user(self: "Users", redis: ArqRedis, request: DeleteUserRequest) -> DeleteUserResponse:
         async with in_transaction() as conn:
             try:
                 user = await User.filter(id=request.id).select_for_update().using_db(conn).first()
@@ -44,7 +44,7 @@ class Users(Service):
 
                 await user.delete()
                 self.logger.info(f"User with ID {request.id} deleted.")
-                return UserSharedModel.model_validate(user)
+                return DeleteUserResponse(user=UserSharedModel.model_validate(user))
             except ValueError as ve:
                 self.logger.error(f"Validation error in delete_user: {ve}")
                 raise
@@ -53,13 +53,13 @@ class Users(Service):
                 raise ValueError(f"Delete operation failed: {str(e)}")
     
     @service_method
-    async def get_user(self: "Users", redis: ArqRedis, request: GetUserRequest) -> UserSharedModel:
+    async def get_user(self: "Users", redis: ArqRedis, request: GetUserRequest) -> GetUserResponse:
         try:
             user = await User.get_or_none(id=request.id)
             if not user:
                 self.logger.warning(f"User with ID {request.id} not found.")
                 raise ValueError(f"User with ID {request.id} not found.")
-            return UserSharedModel.model_validate(user)
+            return GetUserResponse(user=UserSharedModel.model_validate(user))
         except ValueError as ve:
             self.logger.error(f"Validation error in get_user: {ve}")
             raise

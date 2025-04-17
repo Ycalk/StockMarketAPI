@@ -1,9 +1,11 @@
 from pydantic import BaseModel
 from uuid import UUID
+from .user import User
 
 
 class DeleteUserRequest(BaseModel):
     id: UUID
 
 
-# Response - .users.User
+class DeleteUserResponse(BaseModel):
+    user: User

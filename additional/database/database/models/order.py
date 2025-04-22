@@ -2,6 +2,8 @@ from tortoise import fields
 from tortoise.models import Model
 import uuid
 import enum
+from .user import User
+from .instrument import Instrument
 
 
 class OrderType(str, enum.Enum):
@@ -23,13 +25,13 @@ class Direction(str, enum.Enum):
 
 class Order(Model):
     id = fields.UUIDField(pk=True, default=uuid.uuid4)
-    user = fields.ForeignKeyField(
+    user: fields.ForeignKeyRelation["User"] = fields.ForeignKeyField(
         "models.User", related_name="orders", on_delete=fields.CASCADE
     )
     type = fields.CharEnumField(OrderType)
     status = fields.CharEnumField(OrderStatus, default=OrderStatus.NEW)
     direction = fields.CharEnumField(Direction)
-    instrument = fields.ForeignKeyField(
+    instrument: fields.ForeignKeyRelation["Instrument"] = fields.ForeignKeyField(
         "models.Instrument", related_name="orders", on_delete=fields.CASCADE
     )
     quantity = fields.IntField()

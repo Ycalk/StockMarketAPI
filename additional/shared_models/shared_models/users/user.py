@@ -13,7 +13,4 @@ class User(BaseModel):
     name: str
     role: UserRole
 
-    model_config = ConfigDict(
-        from_attributes=True,
-        extra="ignore"
-    )
+    model_config = ConfigDict(from_attributes=True, extra="ignore")

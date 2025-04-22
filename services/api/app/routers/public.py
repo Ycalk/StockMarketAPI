@@ -1,4 +1,3 @@
-from http.client import responses
 from fastapi import APIRouter, HTTPException
 from ..models.public import RegisterUserRequest
 from ..models.user import User as UserAPIModel
@@ -17,8 +16,11 @@ users_client = MicroKitClient(RedisConfig.REDIS_SETTINGS, "Users")
 instruments_client = MicroKitClient(RedisConfig.REDIS_SETTINGS, "Instruments")
 
 
-@router.post("/register", response_model=UserAPIModel, responses={500: {"model": ErrorResponse}, 
-                                                                  408: {"model": ErrorResponse}})
+@router.post(
+    "/register",
+    response_model=UserAPIModel,
+    responses={500: {"model": ErrorResponse}, 408: {"model": ErrorResponse}},
+)
 async def register_user(request: RegisterUserRequest):
     job = await users_client("create_user", CreateUserRequest(**request.model_dump()))
     if job is None:
@@ -32,8 +34,11 @@ async def register_user(request: RegisterUserRequest):
         raise HTTPException(status_code=500, detail=e.message)
 
 
-@router.get("/instrument", response_model=GetInstrumentsResponse, responses={500: {"model": ErrorResponse},
-                                                                             408: {"model": ErrorResponse}})
+@router.get(
+    "/instrument",
+    response_model=GetInstrumentsResponse,
+    responses={500: {"model": ErrorResponse}, 408: {"model": ErrorResponse}},
+)
 async def get_instruments():
     job = await instruments_client("get_instruments")
     if job is None:

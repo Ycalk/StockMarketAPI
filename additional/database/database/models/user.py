@@ -14,9 +14,9 @@ class User(Model):
     name = fields.CharField(max_length=255)
     role = fields.CharEnumField(UserRole, default=UserRole.USER)
     created_at = fields.DatetimeField(auto_now_add=True)
-    
+
     def __str__(self):
         return self.name
-    
+
     class Meta:
         table = "users"

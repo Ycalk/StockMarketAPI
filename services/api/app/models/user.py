@@ -9,9 +9,9 @@ class User(BaseModel):
     name: str
     role: UserRole
     api_key: str
-    
-    @model_validator(mode='before')
+
+    @model_validator(mode="before")
     def autofill_api_key(cls, data: dict):
-        if 'api_key' not in data:
-            data['api_key'] = generate_user_api_key(data['id'])
+        if "api_key" not in data:
+            data["api_key"] = generate_user_api_key(data["id"])
         return data

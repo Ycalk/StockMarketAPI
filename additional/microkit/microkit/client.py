@@ -13,6 +13,7 @@ class MicroKitClient:
         __call__(func_name: str, *args, **kwargs) -> Optional[Job]:
             Enqueues a job to the Redis queue.
     """
+
     def __init__(self, redis_settings: RedisSettings, service_name: str) -> None:
         """
         Initializes the MicroKitClient with Redis settings and service name.
@@ -26,8 +27,12 @@ class MicroKitClient:
         self.redis_settings = redis_settings
         self.service_name = service_name
         self.redis: Optional[ArqRedis] = None
-    
+
     async def __call__(self, func_name: str, *args, **kwargs) -> Optional[Job]:
         if not self.redis:
-            self.redis = await create_pool(self.redis_settings, default_queue_name=self.service_name.lower())
-        return await self.redis.enqueue_job(f"{self.service_name}.{func_name}", *args, **kwargs)
+            self.redis = await create_pool(
+                self.redis_settings, default_queue_name=self.service_name.lower()
+            )
+        return await self.redis.enqueue_job(
+            f"{self.service_name}.{func_name}", *args, **kwargs
+        )

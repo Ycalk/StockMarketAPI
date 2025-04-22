@@ -17,18 +17,20 @@ class Runner:
         run():
             Starts the worker processes using a process pool executor.
     """
-    
-    def __init__(self,
-                 service_class: type[Service],
-                 redis_settings: Optional[RedisSettings] = None, 
-                 workers_count: int = 1,
-                 max_jobs: int = 10,
-                 job_timeout: SecondsTimedelta = 300,
-                 keep_result: SecondsTimedelta = 3600,
-                 keep_result_forever: bool = False,
-                 max_tries: int = 5,
-                 retry_jobs: bool = True,
-                 logging_config: Optional[dict[str, Any]] = None) -> None:
+
+    def __init__(
+        self,
+        service_class: type[Service],
+        redis_settings: Optional[RedisSettings] = None,
+        workers_count: int = 1,
+        max_jobs: int = 10,
+        job_timeout: SecondsTimedelta = 300,
+        keep_result: SecondsTimedelta = 3600,
+        keep_result_forever: bool = False,
+        max_tries: int = 5,
+        retry_jobs: bool = True,
+        logging_config: Optional[dict[str, Any]] = None,
+    ) -> None:
         """
         Runner settings.
 
@@ -67,15 +69,15 @@ class Runner:
         self._retry_jobs = retry_jobs
         self.logging_config = logging_config or default_log_config(verbose=True)
         self.logger = logging.getLogger("microkit")
-    
+
     @staticmethod
     async def _startup(ctx) -> None:
-        await ctx['self'].init()
-    
+        await ctx["self"].init()
+
     @staticmethod
     async def _shutdown(ctx) -> None:
-        await ctx['self'].shutdown()
-    
+        await ctx["self"].shutdown()
+
     def _start_worker(self):
         logging.config.dictConfig(self.logging_config)
         worker = Worker(
@@ -90,10 +92,10 @@ class Runner:
             retry_jobs=self._retry_jobs,
             on_startup=Runner._startup,
             on_shutdown=Runner._shutdown,
-            ctx={"self": self._service}
+            ctx={"self": self._service},
         )
         worker.run()
-    
+
     def run(self):
         with ProcessPoolExecutor(max_workers=self._workers_count) as executor:
             executor.submit(self._start_worker)

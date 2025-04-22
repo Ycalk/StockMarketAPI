@@ -13,10 +13,15 @@ router = APIRouter(prefix="/balance", tags=["balance"])
 users_client = MicroKitClient(RedisConfig.REDIS_SETTINGS, "Users")
 
 
-@router.get("", response_model=GetBalanceResponse, responses={500: {"model": ErrorResponse}, 
-                                                              408: {"model": ErrorResponse}, 
-                                                              404: {"model": ErrorResponse, 
-                                                                    "description": "User not found"}})
+@router.get(
+    "",
+    response_model=GetBalanceResponse,
+    responses={
+        500: {"model": ErrorResponse},
+        408: {"model": ErrorResponse},
+        404: {"model": ErrorResponse, "description": "User not found"},
+    },
+)
 async def get_balance(user_id: UUID = Depends(verify_user_api_key)):
     job = await users_client("get_balance", GetBalanceRequest(user_id=user_id))
     if job is None:

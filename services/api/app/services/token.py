@@ -7,24 +7,29 @@ import jwt
 import os
 
 
-SECRET_KEY = os.getenv('SECRET_KEY', '')
-ADMIN_KEY = os.getenv('ADMIN_KEY', '')
+SECRET_KEY = os.getenv("SECRET_KEY", "")
+ADMIN_KEY = os.getenv("ADMIN_KEY", "")
 user_security = APIKeyHeader(name="Authorization", scheme_name="User authentication")
 admin_security = APIKeyHeader(name="Authorization", scheme_name="Admin authentication")
 
 
 def generate_user_api_key(id: UUID) -> str:
-    return jwt.encode({'id': str(id)}, SECRET_KEY, algorithm='HS256')
+    return jwt.encode({"id": str(id)}, SECRET_KEY, algorithm="HS256")
+
 
 def verify_user_api_key(header_value: str = Security(user_security)) -> UUID:
     try:
         scheme, api_key = get_authorization_scheme_param(header_value)
-        if not scheme or scheme.lower() != 'token':
-            raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Invalid authentication scheme")
+        if not scheme or scheme.lower() != "token":
+            raise HTTPException(
+                status_code=HTTP_403_FORBIDDEN, detail="Invalid authentication scheme"
+            )
         if not api_key:
-            raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Missing API key")
-        payload = jwt.decode(api_key, SECRET_KEY, algorithms=['HS256'])
-        return UUID(payload['id'])
+            raise HTTPException(
+                status_code=HTTP_403_FORBIDDEN, detail="Missing API key"
+            )
+        payload = jwt.decode(api_key, SECRET_KEY, algorithms=["HS256"])
+        return UUID(payload["id"])
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="API key expired")
     except jwt.InvalidTokenError:
@@ -33,8 +38,10 @@ def verify_user_api_key(header_value: str = Security(user_security)) -> UUID:
 
 def verify_admin_api_key(header_value: str = Security(admin_security)) -> None:
     scheme, key = get_authorization_scheme_param(header_value)
-    if not scheme or scheme.lower() != 'token':
-        raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Invalid authentication scheme")
+    if not scheme or scheme.lower() != "token":
+        raise HTTPException(
+            status_code=HTTP_403_FORBIDDEN, detail="Invalid authentication scheme"
+        )
     if not key:
         raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Missing API key")
     if key != ADMIN_KEY:

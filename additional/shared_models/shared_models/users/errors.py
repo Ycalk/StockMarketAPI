@@ -6,6 +6,7 @@ class CriticalError(Exception):
     def __str__(self):
         return f"CriticalError: {self.message}"
 
+
 class UserNotFoundError(Exception):
     def __init__(self, user_id: str):
         msg = f"User with ID {user_id} not found."
@@ -14,6 +15,7 @@ class UserNotFoundError(Exception):
 
     def __str__(self):
         return f"UserNotFoundError: {self.message}"
+
 
 class InsufficientFundsError(Exception):
     def __init__(self, user_id: str, requested: int, available: int):

@@ -23,11 +23,15 @@ class Direction(str, enum.Enum):
 
 class Order(Model):
     id = fields.UUIDField(pk=True, default=uuid.uuid4)
-    user = fields.ForeignKeyField("models.User", related_name="orders", on_delete=fields.CASCADE)
+    user = fields.ForeignKeyField(
+        "models.User", related_name="orders", on_delete=fields.CASCADE
+    )
     type = fields.CharEnumField(OrderType)
     status = fields.CharEnumField(OrderStatus, default=OrderStatus.NEW)
     direction = fields.CharEnumField(Direction)
-    instrument = fields.ForeignKeyField("models.Instrument", related_name="orders", on_delete=fields.CASCADE)
+    instrument = fields.ForeignKeyField(
+        "models.Instrument", related_name="orders", on_delete=fields.CASCADE
+    )
     quantity = fields.IntField()
     price = fields.IntField(null=True)
     filled = fields.IntField(default=0)

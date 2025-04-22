@@ -24,11 +24,16 @@ instruments_client = MicroKitClient(RedisConfig.REDIS_SETTINGS, "Instruments")
 users_client = MicroKitClient(RedisConfig.REDIS_SETTINGS, "Users")
 
 
-@router.delete("/user/{user_id}", response_model=UserAPIModel, responses={500: {"model": ErrorResponse}, 
-                                                                          408: {"model": ErrorResponse},
-                                                                          404: {"model": ErrorResponse, 
-                                                                                "description": "User not found"}})
-async def delete_user(user_id: UUID, _:None = Depends(verify_admin_api_key)):
+@router.delete(
+    "/user/{user_id}",
+    response_model=UserAPIModel,
+    responses={
+        500: {"model": ErrorResponse},
+        408: {"model": ErrorResponse},
+        404: {"model": ErrorResponse, "description": "User not found"},
+    },
+)
+async def delete_user(user_id: UUID, _: None = Depends(verify_admin_api_key)):
     job = await users_client("delete_user", DeleteUserRequest(id=user_id))
     if job is None:
         raise HTTPException(500, "Cannot create job")
@@ -43,10 +48,17 @@ async def delete_user(user_id: UUID, _:None = Depends(verify_admin_api_key)):
         raise HTTPException(status_code=500, detail=e.message)
 
 
-@router.post("/instrument", response_model=ResponseStatus, responses={500: {"model": ErrorResponse},
-                                                                      408: {"model": ErrorResponse}})
-async def create_instrument(request: InstrumentSharedModel, _:None = Depends(verify_admin_api_key)):
-    job = await instruments_client("add_instrument", AddInstrumentRequest(instrument=request))
+@router.post(
+    "/instrument",
+    response_model=ResponseStatus,
+    responses={500: {"model": ErrorResponse}, 408: {"model": ErrorResponse}},
+)
+async def create_instrument(
+    request: InstrumentSharedModel, _: None = Depends(verify_admin_api_key)
+):
+    job = await instruments_client(
+        "add_instrument", AddInstrumentRequest(instrument=request)
+    )
     if job is None:
         raise HTTPException(500, "Cannot create job")
     try:
@@ -56,14 +68,20 @@ async def create_instrument(request: InstrumentSharedModel, _:None = Depends(ver
         raise HTTPException(status_code=408, detail="Request Timeout")
     except InstrumentCriticalError as e:
         raise HTTPException(status_code=500, detail=e.message)
-    except Exception as e:
+    except Exception:
         return ResponseStatus(success=False)
 
 
-@router.delete("/instrument/{ticker}", response_model=ResponseStatus, tags=["user"], responses={500: {"model": ErrorResponse},
-                                                                                                408: {"model": ErrorResponse}})
-async def delete_instrument(ticker: str, _:None = Depends(verify_admin_api_key)):
-    job = await instruments_client("delete_instrument", DeleteInstrumentRequest(ticker=ticker))
+@router.delete(
+    "/instrument/{ticker}",
+    response_model=ResponseStatus,
+    tags=["user"],
+    responses={500: {"model": ErrorResponse}, 408: {"model": ErrorResponse}},
+)
+async def delete_instrument(ticker: str, _: None = Depends(verify_admin_api_key)):
+    job = await instruments_client(
+        "delete_instrument", DeleteInstrumentRequest(ticker=ticker)
+    )
     if job is None:
         raise HTTPException(500, "Cannot create job")
     try:
@@ -73,13 +91,17 @@ async def delete_instrument(ticker: str, _:None = Depends(verify_admin_api_key))
         raise HTTPException(status_code=408, detail="Request Timeout")
     except InstrumentCriticalError as e:
         raise HTTPException(status_code=500, detail=e.message)
-    except Exception as e:
+    except Exception:
         return ResponseStatus(success=False)
 
 
-@router.post("/balance/deposit", response_model=ResponseStatus, tags=["balance"], responses={500: {"model": ErrorResponse},
-                                                                                             408: {"model": ErrorResponse}})
-async def deposit(request: DepositRequest, _:None = Depends(verify_admin_api_key)):
+@router.post(
+    "/balance/deposit",
+    response_model=ResponseStatus,
+    tags=["balance"],
+    responses={500: {"model": ErrorResponse}, 408: {"model": ErrorResponse}},
+)
+async def deposit(request: DepositRequest, _: None = Depends(verify_admin_api_key)):
     job = await users_client("deposit", request)
     if job is None:
         raise HTTPException(500, "Cannot create job")
@@ -90,13 +112,17 @@ async def deposit(request: DepositRequest, _:None = Depends(verify_admin_api_key
         raise HTTPException(status_code=408, detail="Request Timeout")
     except UserCriticalError as e:
         raise HTTPException(status_code=500, detail=e.message)
-    except Exception as e:
+    except Exception:
         return ResponseStatus(success=False)
 
 
-@router.post("/balance/withdraw", response_model=ResponseStatus, tags=["balance"], responses={500: {"model": ErrorResponse},
-                                                                                              408: {"model": ErrorResponse}})
-async def withdraw(request: WithdrawRequest, _:None = Depends(verify_admin_api_key)):
+@router.post(
+    "/balance/withdraw",
+    response_model=ResponseStatus,
+    tags=["balance"],
+    responses={500: {"model": ErrorResponse}, 408: {"model": ErrorResponse}},
+)
+async def withdraw(request: WithdrawRequest, _: None = Depends(verify_admin_api_key)):
     job = await users_client("withdraw", request)
     if job is None:
         raise HTTPException(500, "Cannot create job")
@@ -107,5 +133,5 @@ async def withdraw(request: WithdrawRequest, _:None = Depends(verify_admin_api_k
         raise HTTPException(status_code=408, detail="Request Timeout")
     except UserCriticalError as e:
         raise HTTPException(status_code=500, detail=e.message)
-    except Exception as e:
+    except Exception:
         return ResponseStatus(success=False)

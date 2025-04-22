@@ -125,7 +125,7 @@ class Users(Service):
                     operation_type=OperationType.DEPOSIT,
                     using_db=conn,
                 )
-            except UserNotFoundError or InstrumentNotFoundError as ve:
+            except (UserNotFoundError, InstrumentNotFoundError) as ve:
                 self.logger.error(f"Validation error in deposit: {ve}")
                 raise
             except Exception as e:
@@ -191,7 +191,9 @@ class Users(Service):
                 )
 
             except (
-                UserNotFoundError or InstrumentNotFoundError or InsufficientFundsError
+                UserNotFoundError,
+                InstrumentNotFoundError,
+                InsufficientFundsError,
             ) as ve:
                 self.logger.error(f"Validation error in withdraw: {ve}")
                 raise

@@ -11,7 +11,7 @@ class OperationType(str, enum.Enum):
 
 
 class BalanceHistory(Model):
-    id = fields.UUIDField(pk=True)
+    id = fields.UUIDField(primary_key=True)
     user: fields.ForeignKeyRelation["User"] = fields.ForeignKeyField(
         "models.User", related_name="balance_history", on_delete=fields.CASCADE
     )

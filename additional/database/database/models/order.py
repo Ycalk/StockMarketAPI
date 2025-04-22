@@ -24,7 +24,7 @@ class Direction(str, enum.Enum):
 
 
 class Order(Model):
-    id = fields.UUIDField(pk=True, default=uuid.uuid4)
+    id = fields.UUIDField(primary_key=True, default=uuid.uuid4)
     user: fields.ForeignKeyRelation["User"] = fields.ForeignKeyField(
         "models.User", related_name="orders", on_delete=fields.CASCADE
     )

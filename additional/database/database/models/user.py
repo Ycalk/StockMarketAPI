@@ -10,7 +10,7 @@ class UserRole(str, enum.Enum):
 
 
 class User(Model):
-    id = fields.UUIDField(pk=True, default=uuid.uuid4)
+    id = fields.UUIDField(primary_key=True, default=uuid.uuid4)
     name = fields.CharField(max_length=255)
     role = fields.CharEnumField(UserRole, default=UserRole.USER)
     created_at = fields.DatetimeField(auto_now_add=True)

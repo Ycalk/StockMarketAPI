@@ -6,7 +6,7 @@ from .order import Order
 
 
 class Transaction(Model):
-    id = fields.UUIDField(pk=True, default=uuid.uuid4)
+    id = fields.UUIDField(primary_key=True, default=uuid.uuid4)
     instrument: fields.ForeignKeyRelation["Instrument"] = fields.ForeignKeyField(
         "models.Instrument", related_name="transactions", on_delete=fields.NO_ACTION
     )

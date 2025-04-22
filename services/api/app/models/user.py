@@ -1,7 +1,7 @@
 from uuid import UUID
 from pydantic import BaseModel, model_validator
 from shared_models.users.user import UserRole
-from ..services.token import generate_user_api_key
+from app.services.token import generate_user_api_key
 
 
 class User(BaseModel):

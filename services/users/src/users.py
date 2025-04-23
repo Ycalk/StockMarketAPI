@@ -220,14 +220,13 @@ class Users(Service):
 
                 balances = (
                     await Balance.filter(user=user)
-                    .prefetch_related("instrument")
                     .using_db(conn)
                     .all()
                 )
 
                 return GetBalanceResponse(
                     root={
-                        balance.instrument.ticker: balance.amount
+                        (await balance.instrument).ticker: balance.amount
                         for balance in balances
                     }
                 )

@@ -218,11 +218,7 @@ class Users(Service):
                     self.logger.warning(f"User {request.user_id} not found")
                     raise UserNotFoundError(str(request.user_id))
 
-                balances = (
-                    await Balance.filter(user=user)
-                    .using_db(conn)
-                    .all()
-                )
+                balances = await Balance.filter(user=user).using_db(conn).all()
 
                 return GetBalanceResponse(
                     root={

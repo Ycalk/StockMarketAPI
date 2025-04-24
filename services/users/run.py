@@ -1,6 +1,6 @@
-from .src.users import Users
 from microkit.service import Runner
-from .src.config import Config
+from src.users import Users # type: ignore
+from src.config import Config # type: ignore
 from microkit.service.logs import default_log_config
 
 

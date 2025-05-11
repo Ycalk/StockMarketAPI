@@ -9,8 +9,16 @@ import os
 
 SECRET_KEY = os.getenv("SECRET_KEY", "")
 ADMIN_KEY = os.getenv("ADMIN_KEY", "")
-user_security = APIKeyHeader(name="Authorization", scheme_name="User authentication", description=r"Token authentication. Example: 'Authorization: TOKEN {token}'")
-admin_security = APIKeyHeader(name="Authorization", scheme_name="Admin authentication", description=r"Token authentication. Example: 'Authorization: TOKEN {token}'")
+user_security = APIKeyHeader(
+    name="Authorization",
+    scheme_name="User authentication",
+    description=r"Token authentication. Example: 'Authorization: TOKEN {token}'",
+)
+admin_security = APIKeyHeader(
+    name="Authorization",
+    scheme_name="Admin authentication",
+    description=r"Token authentication. Example: 'Authorization: TOKEN {token}'",
+)
 
 
 def generate_user_api_key(id: UUID) -> str:

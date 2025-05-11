@@ -10,6 +10,7 @@ from shared_models.instruments.errors import (
 )
 import asyncio
 
+
 @pytest.mark.asyncio
 async def test_instrument_lifecycle(ctx: dict):
     # 1. Check initial state (no instruments)
@@ -19,8 +20,12 @@ async def test_instrument_lifecycle(ctx: dict):
     # 2. Adding a new instrument
     ticker = "AAPL"
     name = "Apple Inc."
-    await Instruments.add_instrument(ctx, AddInstrumentRequest(
-        instrument=InstrumentSharedModel(ticker=ticker, name=name)))
+    await Instruments.add_instrument(
+        ctx,
+        AddInstrumentRequest(
+            instrument=InstrumentSharedModel(ticker=ticker, name=name)
+        ),
+    )
 
     # 3. Check that the instrument was added
     response = await Instruments.get_instruments(ctx)
@@ -35,15 +40,24 @@ async def test_instrument_lifecycle(ctx: dict):
     response = await Instruments.get_instruments(ctx)
     assert len(response.root) == 0
 
+
 @pytest.mark.asyncio
 async def test_add_duplicate_instrument(ctx: dict):
     ticker = "GOOGL"
-    await Instruments.add_instrument(ctx, AddInstrumentRequest(
-        instrument=InstrumentSharedModel(ticker=ticker, name="Alphabet Inc.")))
+    await Instruments.add_instrument(
+        ctx,
+        AddInstrumentRequest(
+            instrument=InstrumentSharedModel(ticker=ticker, name="Alphabet Inc.")
+        ),
+    )
 
     with pytest.raises(InstrumentAlreadyExistsError):
-        await Instruments.add_instrument(ctx, AddInstrumentRequest(
-        instrument=InstrumentSharedModel(ticker=ticker, name="Google Inc.")))
+        await Instruments.add_instrument(
+            ctx,
+            AddInstrumentRequest(
+                instrument=InstrumentSharedModel(ticker=ticker, name="Google Inc.")
+            ),
+        )
 
     response: GetInstrumentsResponse = await Instruments.get_instruments(ctx)
     assert len(response.root) == 1
@@ -56,12 +70,16 @@ async def test_get_instruments_after_multiple_operations(ctx: dict):
     instruments_data = [
         ("TSLA", "Tesla"),
         ("AMZN", "Amazon"),
-        ("META", "Meta Platforms")
+        ("META", "Meta Platforms"),
     ]
 
     for ticker, name in instruments_data:
-        await Instruments.add_instrument(ctx, AddInstrumentRequest(
-        instrument=InstrumentSharedModel(ticker=ticker, name=name)))
+        await Instruments.add_instrument(
+            ctx,
+            AddInstrumentRequest(
+                instrument=InstrumentSharedModel(ticker=ticker, name=name)
+            ),
+        )
 
     # 2. Checking the list of instruments
     response: GetInstrumentsResponse = await Instruments.get_instruments(ctx)
@@ -85,13 +103,18 @@ async def test_concurrent_instrument_operations(ctx: dict):
     name = "Concurrency Test"
 
     async def add_task():
-        await Instruments.add_instrument(ctx, AddInstrumentRequest(
-            instrument=InstrumentSharedModel(ticker=ticker, name=name)))
-
+        await Instruments.add_instrument(
+            ctx,
+            AddInstrumentRequest(
+                instrument=InstrumentSharedModel(ticker=ticker, name=name)
+            ),
+        )
 
     async def delete_task():
         try:
-            await Instruments.delete_instrument(ctx, DeleteInstrumentRequest(ticker=ticker))
+            await Instruments.delete_instrument(
+                ctx, DeleteInstrumentRequest(ticker=ticker)
+            )
         except InstrumentNotFoundError:
             pass
 

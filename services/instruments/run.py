@@ -1,6 +1,6 @@
-from src.instruments import Instruments # type: ignore
+from src.instruments import Instruments  # type: ignore
 from microkit.service import Runner
-from src.config import Config # type: ignore
+from src.config import Config  # type: ignore
 from microkit.service.logs import default_log_config
 
 

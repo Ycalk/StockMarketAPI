@@ -13,9 +13,13 @@ from database import Instrument
 
 @pytest.mark.asyncio
 async def test_create_instrument(ctx: dict):
-    await Instruments.add_instrument(ctx, AddInstrumentRequest(
-        instrument= InstrumentSharedModel(ticker="ABC", name="Test Instrument")))
-    
+    await Instruments.add_instrument(
+        ctx,
+        AddInstrumentRequest(
+            instrument=InstrumentSharedModel(ticker="ABC", name="Test Instrument")
+        ),
+    )
+
     instrument = await Instrument.get_or_none(ticker="ABC")
     assert instrument is not None
     assert instrument.ticker == "ABC"
@@ -27,7 +31,7 @@ async def test_delete_instrument(ctx: dict):
     await Instrument.create(ticker="ABC", name="Test Instrument")
 
     await Instruments.delete_instrument(ctx, DeleteInstrumentRequest(ticker="ABC"))
-    
+
     instrument = await Instrument.get_or_none(ticker="ABC")
     assert instrument is None
 
@@ -55,6 +59,8 @@ async def test_create_existing_instrument(ctx: dict):
     await Instrument.create(ticker="ABC", name="Test Instrument")
     with pytest.raises(InstrumentAlreadyExistsError):
         request = AddInstrumentRequest(
-            instrument=InstrumentSharedModel(ticker="ABC", name="Another test Instrument")
+            instrument=InstrumentSharedModel(
+                ticker="ABC", name="Another test Instrument"
+            )
         )
         await Instruments.add_instrument(ctx, request)

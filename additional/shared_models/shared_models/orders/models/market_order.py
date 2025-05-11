@@ -5,7 +5,7 @@ from .orders_bodies import LimitOrderBody
 from datetime import datetime
 
 
-class LimitOrder(BaseModel):
+class MarketOrder(BaseModel):
     id: UUID
     status: OrderStatus
     user_id: UUID

@@ -283,20 +283,21 @@ class Orders(Service):
                     raise InstrumentNotFoundError(request.body.ticker)
                 user = await User.get_or_none(
                     id=request.user_id, using_db=conn
-                ).prefetch_related("balances")
+                )
                 if not user:
                     raise UserNotFoundError(str(request.user_id))
-                user_balance: Optional[Balance] = None
-                for balance in user.balances:  # type: ignore
-                    if balance.instrument.ticker == instrument.ticker:
-                        user_balance = balance
-                        break
-
+                
+                balance = await Balance.filter(user=user, instrument=instrument).first()
+                
                 if request.body.direction == Direction.SELL:
+                    if balance is None:
+                        raise InsufficientFundsError(
+                            str(user.id), request.body.quantity, 0
+                        )
                     maximum_to_sell = (
-                        user_balance.amount
+                        balance.amount
                         - await self.get_lock_balance(user, instrument, conn)
-                        if user_balance
+                        if balance
                         else 0
                     )
                     if maximum_to_sell < request.body.quantity:

@@ -1,0 +1,34 @@
+import logging
+from arq import ArqRedis
+import pytest
+from tortoise import Tortoise
+from ..src.orders import Orders
+import pytest_asyncio
+
+
+@pytest_asyncio.fixture(scope="function", autouse=True, loop_scope="session")
+async def setup_database():
+    config = {
+        "connections": {"default": "sqlite://:memory:"},
+        "apps": {
+            "models": {
+                "models": ["database.models"],
+                "default_connection": "default",
+            }
+        },
+    }
+    await Tortoise.init(config)
+    await Tortoise.generate_schemas()
+    yield
+    await Tortoise._drop_databases()
+    await Tortoise.close_connections()
+
+
+@pytest.fixture(scope="session")
+def ctx() -> dict:
+    order_service = Orders()
+    order_service.logger = logging.getLogger("orders_test")
+    return {
+        "self": order_service,
+        "redis": ArqRedis(),
+    }

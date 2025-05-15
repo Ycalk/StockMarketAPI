@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS "balance_history" (
     "amount" INT NOT NULL,
     "operation_type" VARCHAR(8) NOT NULL,
     "executed_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "instrument_id" VARCHAR(10) NOT NULL REFERENCES "instruments" ("ticker") ON DELETE NO ACTION,
+    "instrument_id" VARCHAR(10) NOT NULL REFERENCES "instruments" ("ticker") ON DELETE CASCADE,
     "user_id" UUID NOT NULL REFERENCES "users" ("id") ON DELETE CASCADE
 );
 COMMENT ON COLUMN "balance_history"."operation_type" IS 'DEPOSIT: DEPOSIT\nWITHDRAW: WITHDRAW';
@@ -51,9 +51,9 @@ CREATE TABLE IF NOT EXISTS "transactions" (
     "quantity" INT NOT NULL,
     "price" INT NOT NULL,
     "executed_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "buyer_order_id" UUID REFERENCES "orders" ("id") ON DELETE NO ACTION,
-    "instrument_id" VARCHAR(10) NOT NULL REFERENCES "instruments" ("ticker") ON DELETE NO ACTION,
-    "seller_order_id" UUID REFERENCES "orders" ("id") ON DELETE NO ACTION
+    "buyer_order_id" UUID NOT NULL REFERENCES "orders" ("id") ON DELETE CASCADE,
+    "instrument_id" VARCHAR(10) NOT NULL REFERENCES "instruments" ("ticker") ON DELETE CASCADE,
+    "seller_order_id" UUID NOT NULL REFERENCES "orders" ("id") ON DELETE CASCADE
 );
 CREATE TABLE IF NOT EXISTS "aerich" (
     "id" SERIAL NOT NULL PRIMARY KEY,

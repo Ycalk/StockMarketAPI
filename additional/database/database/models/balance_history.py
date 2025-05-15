@@ -16,7 +16,7 @@ class BalanceHistory(Model):
         "models.User", related_name="balance_history", on_delete=fields.CASCADE
     )
     instrument: fields.ForeignKeyRelation["Instrument"] = fields.ForeignKeyField(
-        "models.Instrument", related_name="balance_history", on_delete=fields.NO_ACTION
+        "models.Instrument", related_name="balance_history", on_delete=fields.CASCADE
     )
     amount = fields.IntField()
     operation_type = fields.CharEnumField(OperationType)

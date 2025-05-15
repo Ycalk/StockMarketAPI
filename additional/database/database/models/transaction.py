@@ -8,21 +8,19 @@ from .order import Order
 class Transaction(Model):
     id = fields.UUIDField(primary_key=True, default=uuid.uuid4)
     instrument: fields.ForeignKeyRelation["Instrument"] = fields.ForeignKeyField(
-        "models.Instrument", related_name="transactions", on_delete=fields.NO_ACTION
+        "models.Instrument", related_name="transactions", on_delete=fields.CASCADE
     )
     quantity = fields.IntField()
     price = fields.IntField()
-    buyer_order: fields.ForeignKeyNullableRelation["Order"] = fields.ForeignKeyField(
+    buyer_order: fields.ForeignKeyRelation["Order"] = fields.ForeignKeyField(
         "models.Order",
         related_name="buy_transactions",
-        null=True,
-        on_delete=fields.NO_ACTION,
+        on_delete=fields.CASCADE,
     )
-    seller_order: fields.ForeignKeyNullableRelation["Order"] = fields.ForeignKeyField(
+    seller_order: fields.ForeignKeyRelation["Order"] = fields.ForeignKeyField(
         "models.Order",
         related_name="sell_transactions",
-        null=True,
-        on_delete=fields.NO_ACTION,
+        on_delete=fields.CASCADE,
     )
     executed_at = fields.DatetimeField(auto_now_add=True)
 

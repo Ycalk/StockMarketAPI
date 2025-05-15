@@ -376,7 +376,9 @@ class Orders(Service):
                 self.logger.info(f"Unexpected error: {e}")
                 raise CriticalError(f"Unexpected error: {e}")
             finally:
-                await self.execute_orders(request.body.ticker)
+                lock = redis.lock(f"lock:orders:{request.body.ticker}", timeout=5)
+                async with lock:
+                    await self.execute_orders(request.body.ticker)
 
     @service_method
     async def list_orders(

@@ -49,60 +49,82 @@ class Orders(Service):
     async def execute_transaction(
         self, transaction: Transaction, context: TransactionContext
     ) -> None:
-        if not transaction.buyer_order or not transaction.seller_order:
-            raise CriticalError("Buyer or seller order not found")
-        buyer = transaction.buyer_order.user if transaction.buyer_order else None
-        seller = transaction.seller_order.user if transaction.seller_order else None
-        if not buyer or not seller:
-            raise CriticalError("Buyer or seller not found")
+        buyer = transaction.buyer_order.user
+        seller = transaction.seller_order.user
+        instrument_id = transaction.instrument.ticker
+        quantity = transaction.quantity
+        total_price = quantity * transaction.price
 
-        # change orders filled amounts and statuses
-        transaction.buyer_order.filled += transaction.quantity
-        transaction.seller_order.filled += transaction.quantity
-        if transaction.buyer_order.quantity == transaction.buyer_order.filled:
-            transaction.buyer_order.status = DatabaseOrderStatus.EXECUTED
-        if transaction.seller_order.quantity == transaction.seller_order.filled:
-            transaction.seller_order.status = DatabaseOrderStatus.EXECUTED
+        for order in (transaction.buyer_order, transaction.seller_order):
+            order.filled += quantity
+            if order.filled == order.quantity:
+                order.status = DatabaseOrderStatus.EXECUTED
 
-        # move transaction.instrument from seller to buyer
         buyer_balance, _ = await Balance.get_or_create(
             user=buyer,
-            ticker=transaction.instrument.ticker,
+            instrument_id=instrument_id,
             using_db=context,  # type: ignore
+            defaults={
+                "amount": 0
+            }
         )
-        seller_balance = await Balance.get_or_none(
-            user=seller,
-            ticker=transaction.instrument.ticker,
-            using_db=context,  # type: ignore
-        )
-        if seller_balance is None or seller_balance.amount < transaction.quantity:
-            raise CriticalError(
-                f"Seller does not have enough {transaction.instrument.ticker} to create transaction"
+
+        if buyer == seller:
+            # self trade
+            if buyer_balance.amount < quantity:
+                raise CriticalError(
+                    f"User does not have enough {instrument_id} to self-trade"
+                )
+            buyer_rub_balance, _ = await Balance.get_or_create(
+                user=buyer,
+                instrument_id="RUB",
+                using_db=context,  # type: ignore
+                defaults={
+                    "amount": 0
+                }
             )
-        buyer_balance.amount += transaction.quantity
-        seller_balance.amount -= transaction.quantity
+            if buyer_rub_balance.amount < total_price:
+                raise CriticalError("User does not have enough RUB to self-trade")
+        else:
+            seller_balance = await Balance.get_or_none(
+                user=seller,
+                instrument_id=instrument_id,
+                using_db=context,  # type: ignore
+            )
+            if seller_balance is None or seller_balance.amount < quantity:
+                raise CriticalError(
+                    f"Seller does not have enough {instrument_id} to sell"
+                )
 
-        # move rubs from buyer to seller
-        buyer_rub_balance = await Balance.get_or_none(
-            user=buyer,
-            ticker="RUB",
-            using_db=context,  # type: ignore
-        )
-        seller_rub_balance, _ = await Balance.get_or_create(
-            user=seller,
-            ticker="RUB",
-            using_db=context,  # type: ignore
-        )
-        if buyer_rub_balance is None or buyer_rub_balance.amount < transaction.quantity:
-            raise CriticalError("Buyer does not have enough RUB to create transaction")
-        buyer_rub_balance.amount -= transaction.quantity
-        seller_rub_balance.amount += transaction.quantity
+            seller_balance.amount -= quantity
+            buyer_balance.amount += quantity
 
-        # save changes
-        await buyer_balance.save(using_db=context)  # type: ignore
-        await seller_balance.save(using_db=context)  # type: ignore
-        await buyer_rub_balance.save(using_db=context)  # type: ignore
-        await seller_rub_balance.save(using_db=context)  # type: ignore
+            buyer_rub_balance = await Balance.get_or_none(
+                user=buyer,
+                instrument_id="RUB",
+                using_db=context,  # type: ignore
+            )
+            seller_rub_balance, _ = await Balance.get_or_create(
+                user=seller,
+                instrument_id="RUB",
+                using_db=context,  # type: ignore
+                defaults={
+                    "amount": 0
+                }
+            )
+            if buyer_rub_balance is None or buyer_rub_balance.amount < total_price:
+                raise CriticalError("Buyer does not have enough RUB to buy")
+
+            buyer_rub_balance.amount -= total_price
+            seller_rub_balance.amount += total_price
+
+            for balance in (
+                buyer_balance,
+                seller_balance,
+                buyer_rub_balance,
+                seller_rub_balance,
+            ):
+                await balance.save(using_db=context)  # type: ignore
         await transaction.save(using_db=context)  # type: ignore
         await transaction.buyer_order.save(using_db=context)  # type: ignore
         await transaction.seller_order.save(using_db=context)  # type: ignore
@@ -154,7 +176,7 @@ class Orders(Service):
         price = get_price()
         buyer_balance = await Balance.get_or_none(
             user=buy_order.user,
-            ticker="RUB",
+            instrument_id="RUB",
             using_db=context,  # type: ignore
         )
 
@@ -233,6 +255,7 @@ class Orders(Service):
                     status=DatabaseOrderStatus.NEW,
                 )
                 .using_db(conn)
+                .prefetch_related("instrument", "user")
                 .all()
             )
 
@@ -244,6 +267,7 @@ class Orders(Service):
                     status=DatabaseOrderStatus.NEW,
                 )
                 .using_db(conn)  # type: ignore
+                .prefetch_related("instrument", "user")
                 .order_by("-price")
                 .all()
             )
@@ -256,6 +280,7 @@ class Orders(Service):
                     status=DatabaseOrderStatus.NEW,
                 )
                 .using_db(conn)  # type: ignore
+                .prefetch_related("instrument", "user")
                 .order_by("price")
                 .all()
             )
@@ -320,8 +345,8 @@ class Orders(Service):
     async def create_order(
         self: "Orders", redis: "ArqRedis", request: CreateOrderRequest
     ) -> CreateOrderResponse:
-        async with in_transaction() as conn:
-            try:
+        try:
+            async with in_transaction() as conn:
                 instrument = await Instrument.get_or_none(
                     ticker=request.body.ticker, using_db=conn
                 )
@@ -364,20 +389,20 @@ class Orders(Service):
                 if isinstance(request.body, LimitOrderBody):
                     order_data["price"] = request.body.price
                 order = await Order.create(using_db=conn, **order_data)
-                lock = redis.lock(f"lock:orders:{request.body.ticker}", timeout=5)
-                async with lock:
-                    await self.execute_orders(request.body.ticker)
-                return CreateOrderResponse(order_id=order.id)
-            except (
-                UserNotFoundError,
-                InstrumentNotFoundError,
-                InsufficientFundsError,
-            ) as ve:
-                self.logger.error(f"Validation error: {ve}")
-                raise
-            except Exception as e:
-                self.logger.info(f"Unexpected error: {e}")
-                raise CriticalError(f"Unexpected error: {e}")
+            lock = redis.lock(f"lock:orders:{request.body.ticker}", timeout=5)
+            async with lock:
+                await self.execute_orders(request.body.ticker)
+            return CreateOrderResponse(order_id=order.id)
+        except (
+            UserNotFoundError,
+            InstrumentNotFoundError,
+            InsufficientFundsError,
+        ) as ve:
+            self.logger.error(f"Validation error: {ve}")
+            raise
+        except Exception as e:
+            self.logger.info(f"Unexpected error: {e}")
+            raise CriticalError(f"Unexpected error: {e}")
 
     @service_method
     async def list_orders(

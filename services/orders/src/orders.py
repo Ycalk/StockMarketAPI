@@ -36,6 +36,7 @@ from shared_models.orders.requests.get_order import (
     GetOrderRequest,
     GetOrderResponse,
 )
+from shared_models.orders.requests.cancel_order import CancelOrderRequest
 
 
 class Orders(Service):
@@ -408,6 +409,24 @@ class Orders(Service):
                 if not order or order.user.id != request.user_id:
                     raise OrderNotFoundError(str(request.order_id))
                 return GetOrderResponse(root=self.convert_database_model(order))
+            except OrderNotFoundError as ve:
+                self.logger.error(f"Validation error: {ve}")
+                raise
+            except Exception as e:
+                self.logger.info(f"Unexpected error: {e}")
+                raise CriticalError(f"Unexpected error: {e}")
+
+    @service_method
+    async def cancel_order(
+        self: "Orders", redis: "ArqRedis", request: CancelOrderRequest
+    ) -> None:
+        async with in_transaction() as conn:
+            try:
+                order = await Order.get_or_none(id=request.order_id, using_db=conn)
+                if not order or order.user.id != request.user_id:
+                    raise OrderNotFoundError(str(request.order_id))
+                order.status = DatabaseOrderStatus.CANCELLED
+                await order.save(using_db=conn)
             except OrderNotFoundError as ve:
                 self.logger.error(f"Validation error: {ve}")
                 raise

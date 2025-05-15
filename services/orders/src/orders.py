@@ -41,7 +41,7 @@ from shared_models.orders.requests.cancel_order import CancelOrderRequest
 
 class Orders(Service):
     async def init(self):
-        self.logger = logging.getLogger("users")
+        self.logger = logging.getLogger("orders")
         self.logger.info("Initializing database connection...")
         await Tortoise.init(config=TORTOISE_ORM)
         self.logger.info("Database connection initialized.")

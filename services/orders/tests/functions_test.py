@@ -24,8 +24,7 @@ from shared_models.orders.requests.cancel_order import CancelOrderRequest
 
 
 @pytest.mark.asyncio
-async def test_create_order_success_sell_limit(ctx: dict, instrument: Instrument):
-    user = await User.create(name="Test user")
+async def test_create_order_success_sell_limit(ctx: dict, instrument: Instrument, user: User):
     await Balance.create(user=user, instrument=instrument, amount=100)
 
     body = LimitOrderBody(
@@ -60,8 +59,7 @@ async def test_create_order_user_not_found(ctx: dict, instrument: Instrument):
 
 
 @pytest.mark.asyncio
-async def test_create_order_instrument_not_found(ctx: dict):
-    user = await User.create(name="Test user")
+async def test_create_order_instrument_not_found(ctx: dict, user: User):
     request = CreateOrderRequest(
         user_id=user.id,
         body=LimitOrderBody(
@@ -74,8 +72,7 @@ async def test_create_order_instrument_not_found(ctx: dict):
 
 
 @pytest.mark.asyncio
-async def test_create_order_insufficient_funds(ctx: dict, instrument: Instrument):
-    user = await User.create(name="Test user")
+async def test_create_order_insufficient_funds(ctx: dict, instrument: Instrument, user: User):
     await Balance.create(user=user, instrument=instrument, amount=5)
 
     request = CreateOrderRequest(
@@ -90,8 +87,7 @@ async def test_create_order_insufficient_funds(ctx: dict, instrument: Instrument
 
 
 @pytest.mark.asyncio
-async def test_list_orders_success(ctx: dict, instrument: Instrument):
-    user = await User.create(name="Test user")
+async def test_list_orders_success(ctx: dict, instrument: Instrument, user: User):
     await Order.create(
         user=user,
         type=DatabaseOrderType.LIMIT,
@@ -127,8 +123,7 @@ async def test_list_orders_user_not_found(ctx: dict):
 
 
 @pytest.mark.asyncio
-async def test_get_order_success(ctx: dict, instrument: Instrument):
-    user = await User.create(name="Test user")
+async def test_get_order_success(ctx: dict, instrument: Instrument, user: User):
     order = await Order.create(
         user=user,
         type=DatabaseOrderType.LIMIT,
@@ -147,8 +142,7 @@ async def test_get_order_success(ctx: dict, instrument: Instrument):
 
 
 @pytest.mark.asyncio
-async def test_get_order_not_found(ctx: dict):
-    user = await User.create(name="Test user")
+async def test_get_order_not_found(ctx: dict, user: User):
     request = GetOrderRequest(user_id=user.id, order_id=uuid4())
 
     with pytest.raises(OrderNotFoundError):
@@ -175,8 +169,7 @@ async def test_get_order_wrong_user(ctx: dict, instrument: Instrument):
 
 
 @pytest.mark.asyncio
-async def test_cancel_order_success(ctx: dict, instrument: Instrument):
-    user = await User.create(name="Test user")
+async def test_cancel_order_success(ctx: dict, instrument: Instrument, user: User):
     order = await Order.create(
         user=user,
         type=DatabaseOrderType.LIMIT,
@@ -194,8 +187,7 @@ async def test_cancel_order_success(ctx: dict, instrument: Instrument):
 
 
 @pytest.mark.asyncio
-async def test_cancel_order_not_found(ctx: dict):
-    user = await User.create(name="Test user")
+async def test_cancel_order_not_found(ctx: dict, user: User):
     request = CancelOrderRequest(user_id=user.id, order_id=uuid4())
 
     with pytest.raises(OrderNotFoundError):

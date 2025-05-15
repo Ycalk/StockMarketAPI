@@ -22,7 +22,7 @@ from shared_models.orders.models.orders_bodies.direction import (
     Direction as SharedModelOrderDirection,
 )
 from shared_models.orders.models import LimitOrder, MarketOrder
-from shared_models.orders.errors import CriticalError
+from shared_models.orders.errors import CriticalError, OrderNotFoundError
 from shared_models.orders.requests.create_order import (
     CreateOrderRequest,
     CreateOrderResponse,
@@ -31,6 +31,10 @@ from shared_models.orders.models.orders_bodies.direction import Direction
 from shared_models.orders.requests.list_orders import (
     ListOrdersRequest,
     ListOrdersResponse,
+)
+from shared_models.orders.requests.get_order import (
+    GetOrderRequest,
+    GetOrderResponse,
 )
 
 
@@ -388,6 +392,23 @@ class Orders(Service):
                     root=[self.convert_database_model(order) for order in orders]
                 )
             except UserNotFoundError as ve:
+                self.logger.error(f"Validation error: {ve}")
+                raise
+            except Exception as e:
+                self.logger.info(f"Unexpected error: {e}")
+                raise CriticalError(f"Unexpected error: {e}")
+
+    @service_method
+    async def get_order(
+        self: "Orders", redis: "ArqRedis", request: GetOrderRequest
+    ) -> GetOrderResponse:
+        async with in_transaction() as conn:
+            try:
+                order = await Order.get_or_none(id=request.order_id, using_db=conn)
+                if not order or order.user.id != request.user_id:
+                    raise OrderNotFoundError(str(request.order_id))
+                return GetOrderResponse(root=self.convert_database_model(order))
+            except OrderNotFoundError as ve:
                 self.logger.error(f"Validation error: {ve}")
                 raise
             except Exception as e:

@@ -25,7 +25,7 @@ async def setup_database():
     await Tortoise.close_connections()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def ctx() -> dict:
     order_service = Orders()
     order_service.logger = logging.getLogger("orders_test")

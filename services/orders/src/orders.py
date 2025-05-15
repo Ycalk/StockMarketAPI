@@ -379,7 +379,6 @@ class Orders(Service):
                 self.logger.info(f"Unexpected error: {e}")
                 raise CriticalError(f"Unexpected error: {e}")
 
-
     @service_method
     async def list_orders(
         self: "Orders", redis: "ArqRedis", request: ListOrdersRequest

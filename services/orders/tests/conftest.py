@@ -1,5 +1,6 @@
 import logging
 from arq import ArqRedis
+from database import Instrument
 import pytest
 from tortoise import Tortoise
 from ..src.orders import Orders
@@ -32,3 +33,8 @@ def ctx() -> dict:
         "self": order_service,
         "redis": ArqRedis(),
     }
+
+
+@pytest_asyncio.fixture(scope="function")
+async def instrument() -> Instrument:
+    return await Instrument.create(ticker="AAPL", name="Apple Inc.")

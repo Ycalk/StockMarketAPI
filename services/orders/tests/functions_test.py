@@ -24,13 +24,12 @@ from shared_models.orders.requests.cancel_order import CancelOrderRequest
 
 
 @pytest.mark.asyncio
-async def test_create_order_success_sell_limit(ctx: dict):
+async def test_create_order_success_sell_limit(ctx: dict, instrument: Instrument):
     user = await User.create(name="Test user")
-    instrument = await Instrument.create(ticker="AAPL", name="Apple Inc.")
     await Balance.create(user=user, instrument=instrument, amount=100)
 
     body = LimitOrderBody(
-        direction=Direction.SELL, ticker="AAPL", quantity=50, price=100
+        direction=Direction.SELL, ticker=instrument.ticker, quantity=50, price=100
     )
     request = CreateOrderRequest(user_id=user.id, body=body)
 
@@ -48,12 +47,11 @@ async def test_create_order_success_sell_limit(ctx: dict):
 
 
 @pytest.mark.asyncio
-async def test_create_order_user_not_found(ctx: dict):
-    await Instrument.create(ticker="AAPL", name="Apple Inc.")
+async def test_create_order_user_not_found(ctx: dict, instrument: Instrument):
     request = CreateOrderRequest(
         user_id=uuid4(),
         body=LimitOrderBody(
-            direction=Direction.SELL, ticker="AAPL", quantity=10, price=100
+            direction=Direction.SELL, ticker=instrument.ticker, quantity=10, price=100
         ),
     )
 
@@ -76,15 +74,14 @@ async def test_create_order_instrument_not_found(ctx: dict):
 
 
 @pytest.mark.asyncio
-async def test_create_order_insufficient_funds(ctx: dict):
+async def test_create_order_insufficient_funds(ctx: dict, instrument: Instrument):
     user = await User.create(name="Test user")
-    instrument = await Instrument.create(ticker="AAPL", name="Apple Inc.")
     await Balance.create(user=user, instrument=instrument, amount=5)
 
     request = CreateOrderRequest(
         user_id=user.id,
         body=LimitOrderBody(
-            direction=Direction.SELL, ticker="AAPL", quantity=10, price=100
+            direction=Direction.SELL, ticker=instrument.ticker, quantity=10, price=100
         ),
     )
 
@@ -93,9 +90,8 @@ async def test_create_order_insufficient_funds(ctx: dict):
 
 
 @pytest.mark.asyncio
-async def test_list_orders_success(ctx: dict):
+async def test_list_orders_success(ctx: dict, instrument: Instrument):
     user = await User.create(name="Test user")
-    instrument = await Instrument.create(ticker="AAPL", name="Apple Inc.")
     await Order.create(
         user=user,
         type=DatabaseOrderType.LIMIT,
@@ -131,9 +127,8 @@ async def test_list_orders_user_not_found(ctx: dict):
 
 
 @pytest.mark.asyncio
-async def test_get_order_success(ctx: dict):
+async def test_get_order_success(ctx: dict, instrument: Instrument):
     user = await User.create(name="Test user")
-    instrument = await Instrument.create(ticker="AAPL", name="Apple Inc.")
     order = await Order.create(
         user=user,
         type=DatabaseOrderType.LIMIT,
@@ -161,10 +156,9 @@ async def test_get_order_not_found(ctx: dict):
 
 
 @pytest.mark.asyncio
-async def test_get_order_wrong_user(ctx: dict):
+async def test_get_order_wrong_user(ctx: dict, instrument: Instrument):
     user1 = await User.create(name="User 1")
     user2 = await User.create(name="User 2")
-    instrument = await Instrument.create(ticker="AAPL", name="Apple Inc.")
     order = await Order.create(
         user=user1,
         type=DatabaseOrderType.LIMIT,
@@ -181,9 +175,8 @@ async def test_get_order_wrong_user(ctx: dict):
 
 
 @pytest.mark.asyncio
-async def test_cancel_order_success(ctx: dict):
+async def test_cancel_order_success(ctx: dict, instrument: Instrument):
     user = await User.create(name="Test user")
-    instrument = await Instrument.create(ticker="AAPL", name="Apple Inc.")
     order = await Order.create(
         user=user,
         type=DatabaseOrderType.LIMIT,
@@ -210,10 +203,9 @@ async def test_cancel_order_not_found(ctx: dict):
 
 
 @pytest.mark.asyncio
-async def test_cancel_order_wrong_user(ctx: dict):
+async def test_cancel_order_wrong_user(ctx: dict, instrument: Instrument):
     user1 = await User.create(name="User 1")
     user2 = await User.create(name="User 2")
-    instrument = await Instrument.create(ticker="AAPL", name="Apple Inc.")
     order = await Order.create(
         user=user1,
         type=DatabaseOrderType.LIMIT,

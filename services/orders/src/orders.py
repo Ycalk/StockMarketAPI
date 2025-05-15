@@ -390,7 +390,12 @@ class Orders(Service):
                 if not user:
                     raise UserNotFoundError(str(request.user_id))
 
-                orders = await Order.filter(user=user).using_db(conn).all()
+                orders = (
+                    await Order.filter(user=user)
+                    .using_db(conn)
+                    .prefetch_related("user", "instrument")
+                    .all()
+                )
                 return ListOrdersResponse(
                     root=[self.convert_database_model(order) for order in orders]
                 )
@@ -407,7 +412,9 @@ class Orders(Service):
     ) -> GetOrderResponse:
         async with in_transaction() as conn:
             try:
-                order = await Order.get_or_none(id=request.order_id, using_db=conn)
+                order = await Order.get_or_none(
+                    id=request.order_id, using_db=conn
+                ).prefetch_related("user", "instrument")
                 if not order or order.user.id != request.user_id:
                     raise OrderNotFoundError(str(request.order_id))
                 return GetOrderResponse(root=self.convert_database_model(order))
@@ -424,7 +431,9 @@ class Orders(Service):
     ) -> None:
         async with in_transaction() as conn:
             try:
-                order = await Order.get_or_none(id=request.order_id, using_db=conn)
+                order = await Order.get_or_none(
+                    id=request.order_id, using_db=conn
+                ).prefetch_related("user")
                 if not order or order.user.id != request.user_id:
                     raise OrderNotFoundError(str(request.order_id))
                 order.status = DatabaseOrderStatus.CANCELLED

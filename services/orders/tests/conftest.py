@@ -39,9 +39,11 @@ def ctx() -> dict:
 async def instrument() -> Instrument:
     return await Instrument.create(ticker="AAPL", name="Apple Inc.")
 
+
 @pytest_asyncio.fixture(scope="function")
 async def user() -> User:
     return await User.create(name="Test user")
+
 
 @pytest_asyncio.fixture(scope="function")
 async def rub() -> Instrument:

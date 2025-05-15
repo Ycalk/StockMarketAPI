@@ -24,7 +24,9 @@ from shared_models.orders.requests.cancel_order import CancelOrderRequest
 
 
 @pytest.mark.asyncio
-async def test_create_order_success_sell_limit(ctx: dict, instrument: Instrument, user: User):
+async def test_create_order_success_sell_limit(
+    ctx: dict, instrument: Instrument, user: User
+):
     await Balance.create(user=user, instrument=instrument, amount=100)
 
     body = LimitOrderBody(
@@ -72,7 +74,9 @@ async def test_create_order_instrument_not_found(ctx: dict, user: User):
 
 
 @pytest.mark.asyncio
-async def test_create_order_insufficient_funds(ctx: dict, instrument: Instrument, user: User):
+async def test_create_order_insufficient_funds(
+    ctx: dict, instrument: Instrument, user: User
+):
     await Balance.create(user=user, instrument=instrument, amount=5)
 
     request = CreateOrderRequest(

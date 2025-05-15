@@ -64,9 +64,7 @@ class Orders(Service):
             user=buyer,
             instrument_id=instrument_id,
             using_db=context,  # type: ignore
-            defaults={
-                "amount": 0
-            }
+            defaults={"amount": 0},
         )
 
         if buyer == seller:
@@ -79,9 +77,7 @@ class Orders(Service):
                 user=buyer,
                 instrument_id="RUB",
                 using_db=context,  # type: ignore
-                defaults={
-                    "amount": 0
-                }
+                defaults={"amount": 0},
             )
             if buyer_rub_balance.amount < total_price:
                 raise CriticalError("User does not have enough RUB to self-trade")
@@ -108,9 +104,7 @@ class Orders(Service):
                 user=seller,
                 instrument_id="RUB",
                 using_db=context,  # type: ignore
-                defaults={
-                    "amount": 0
-                }
+                defaults={"amount": 0},
             )
             if buyer_rub_balance is None or buyer_rub_balance.amount < total_price:
                 raise CriticalError("Buyer does not have enough RUB to buy")

@@ -18,7 +18,9 @@ async def test_create_order_success_sell_limit(ctx: dict):
     instrument = await Instrument.create(ticker="AAPL", name="Apple Inc.")
     await Balance.create(user=user, instrument=instrument, amount=100)
 
-    body = LimitOrderBody(direction=Direction.SELL, ticker="AAPL", quantity=50, price=100)
+    body = LimitOrderBody(
+        direction=Direction.SELL, ticker="AAPL", quantity=50, price=100
+    )
     request = CreateOrderRequest(user_id=user.id, body=body)
 
     response: CreateOrderResponse = await Orders.create_order(ctx, request)
@@ -33,27 +35,34 @@ async def test_create_order_success_sell_limit(ctx: dict):
     assert order.direction == Direction.SELL
     assert order.type == OrderType.LIMIT
 
+
 @pytest.mark.asyncio
 async def test_create_order_user_not_found(ctx: dict):
     await Instrument.create(ticker="AAPL", name="Apple Inc.")
     request = CreateOrderRequest(
         user_id=uuid4(),
-        body=LimitOrderBody(direction=Direction.SELL, ticker="AAPL", quantity=10, price=100),
+        body=LimitOrderBody(
+            direction=Direction.SELL, ticker="AAPL", quantity=10, price=100
+        ),
     )
 
     with pytest.raises(UserNotFoundError):
         await Orders.create_order(ctx, request)
+
 
 @pytest.mark.asyncio
 async def test_create_order_instrument_not_found(ctx: dict):
     user = await User.create(name="Test user")
     request = CreateOrderRequest(
         user_id=user.id,
-        body=LimitOrderBody(direction=Direction.SELL, ticker="NOTEXIST", quantity=10, price=100),
+        body=LimitOrderBody(
+            direction=Direction.SELL, ticker="NOTEXIST", quantity=10, price=100
+        ),
     )
 
     with pytest.raises(InstrumentNotFoundError):
         await Orders.create_order(ctx, request)
+
 
 @pytest.mark.asyncio
 async def test_create_order_insufficient_funds(ctx: dict):
@@ -63,7 +72,9 @@ async def test_create_order_insufficient_funds(ctx: dict):
 
     request = CreateOrderRequest(
         user_id=user.id,
-        body=LimitOrderBody(direction=Direction.SELL, ticker="AAPL", quantity=10, price=100),
+        body=LimitOrderBody(
+            direction=Direction.SELL, ticker="AAPL", quantity=10, price=100
+        ),
     )
 
     with pytest.raises(InsufficientFundsError):

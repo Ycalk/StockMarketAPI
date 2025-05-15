@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from uuid import UUID
 from .order_status import OrderStatus
-from .orders_bodies import LimitOrderBody
+from .orders_bodies import MarketOrderBody
 from datetime import datetime
 
 
@@ -10,4 +10,4 @@ class MarketOrder(BaseModel):
     status: OrderStatus
     user_id: UUID
     timestamp: datetime
-    body: LimitOrderBody
+    body: MarketOrderBody

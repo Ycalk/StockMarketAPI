@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union
 from arq import ArqRedis
 from microkit.service import Service, service_method
 from database.config import TORTOISE_ORM
@@ -14,13 +14,24 @@ from database.models.order import (
 )
 from shared_models.instruments.errors import InstrumentNotFoundError
 from shared_models.users.errors import UserNotFoundError, InsufficientFundsError
-from shared_models.orders.models.orders_bodies import LimitOrderBody
+from shared_models.orders.models.orders_bodies import LimitOrderBody, MarketOrderBody
+from shared_models.orders.models.order_status import (
+    OrderStatus as SharedModelOrderStatus,
+)
+from shared_models.orders.models.orders_bodies.direction import (
+    Direction as SharedModelOrderDirection,
+)
+from shared_models.orders.models import LimitOrder, MarketOrder
 from shared_models.orders.errors import CriticalError
 from shared_models.orders.requests.create_order import (
     CreateOrderRequest,
     CreateOrderResponse,
 )
 from shared_models.orders.models.orders_bodies.direction import Direction
+from shared_models.orders.requests.list_orders import (
+    ListOrdersRequest,
+    ListOrdersResponse,
+)
 
 
 class Orders(Service):
@@ -270,6 +281,36 @@ class Orders(Service):
         )
         return sum(order.quantity - order.filled for order in user_orders)
 
+    def convert_database_model(
+        self, database_model: Order
+    ) -> Union[MarketOrder, LimitOrder]:
+        if database_model.type == DatabaseOrderType.MARKET:
+            return MarketOrder(
+                id=database_model.id,
+                status=SharedModelOrderStatus(database_model.status.value),
+                user_id=database_model.user.id,
+                timestamp=database_model.created_at,
+                body=MarketOrderBody(
+                    direction=SharedModelOrderDirection(database_model.direction.value),
+                    ticker=database_model.instrument.ticker,
+                    quantity=database_model.quantity,
+                ),
+            )
+        else:
+            return LimitOrder(
+                id=database_model.id,
+                status=SharedModelOrderStatus(database_model.status.value),
+                user_id=database_model.user.id,
+                timestamp=database_model.created_at,
+                body=LimitOrderBody(
+                    direction=SharedModelOrderDirection(database_model.direction.value),
+                    ticker=database_model.instrument.ticker,
+                    quantity=database_model.quantity,
+                    price=database_model.price,
+                ),
+                filled=database_model.filled,
+            )
+
     @service_method
     async def create_order(
         self: "Orders", redis: "ArqRedis", request: CreateOrderRequest
@@ -281,14 +322,12 @@ class Orders(Service):
                 )
                 if not instrument:
                     raise InstrumentNotFoundError(request.body.ticker)
-                user = await User.get_or_none(
-                    id=request.user_id, using_db=conn
-                )
+                user = await User.get_or_none(id=request.user_id, using_db=conn)
                 if not user:
                     raise UserNotFoundError(str(request.user_id))
-                
+
                 balance = await Balance.filter(user=user, instrument=instrument).first()
-                
+
                 if request.body.direction == Direction.SELL:
                     if balance is None:
                         raise InsufficientFundsError(
@@ -333,3 +372,24 @@ class Orders(Service):
                 raise CriticalError(f"Unexpected error: {e}")
             finally:
                 await self.execute_orders(request.body.ticker)
+
+    @service_method
+    async def list_orders(
+        self: "Orders", redis: "ArqRedis", request: ListOrdersRequest
+    ) -> ListOrdersResponse:
+        async with in_transaction() as conn:
+            try:
+                user = await User.get_or_none(id=request.user_id, using_db=conn)
+                if not user:
+                    raise UserNotFoundError(str(request.user_id))
+
+                orders = await Order.filter(user=user).using_db(conn).all()
+                return ListOrdersResponse(
+                    root=[self.convert_database_model(order) for order in orders]
+                )
+            except UserNotFoundError as ve:
+                self.logger.error(f"Validation error: {ve}")
+                raise
+            except Exception as e:
+                self.logger.info(f"Unexpected error: {e}")
+                raise CriticalError(f"Unexpected error: {e}")

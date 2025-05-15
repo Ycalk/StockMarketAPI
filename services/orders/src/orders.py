@@ -364,6 +364,9 @@ class Orders(Service):
                 if isinstance(request.body, LimitOrderBody):
                     order_data["price"] = request.body.price
                 order = await Order.create(using_db=conn, **order_data)
+                lock = redis.lock(f"lock:orders:{request.body.ticker}", timeout=5)
+                async with lock:
+                    await self.execute_orders(request.body.ticker)
                 return CreateOrderResponse(order_id=order.id)
             except (
                 UserNotFoundError,
@@ -375,10 +378,7 @@ class Orders(Service):
             except Exception as e:
                 self.logger.info(f"Unexpected error: {e}")
                 raise CriticalError(f"Unexpected error: {e}")
-            finally:
-                lock = redis.lock(f"lock:orders:{request.body.ticker}", timeout=5)
-                async with lock:
-                    await self.execute_orders(request.body.ticker)
+
 
     @service_method
     async def list_orders(

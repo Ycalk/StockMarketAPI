@@ -1,10 +1,10 @@
 from uuid import UUID
-from pydantic import RootModel
+from pydantic import RootModel, BaseModel
 from ..models import MarketOrder, LimitOrder
 from typing import Union
 
 
-class ListOrdersRequest(RootModel):
+class ListOrdersRequest(BaseModel):
     user_id: UUID
 
 

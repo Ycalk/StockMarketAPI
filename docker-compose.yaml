@@ -1,0 +1,99 @@
+services:
+  redis:
+    image: redis:latest
+    restart: always
+    volumes:
+      - redisdata:/data
+    command: >
+      redis-server
+      --replicaof no one
+      --slave-read-only no
+    environment:
+      - REDIS_DATABASES=16
+
+  db:
+    image: postgres:17
+    restart: always
+    environment:
+      POSTGRES_USER: stockmarketuser
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: stockmarket
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+  
+  additional:
+    build:
+      context: ./additional
+      dockerfile: Dockerfile
+    image: python-image-with-packages:latest
+  
+  users:
+    build:
+      context: ./services/users
+      dockerfile: Dockerfile
+      args:
+        IMAGE_WITH_PACKAGES: python-image-with-packages:latest
+    depends_on:
+      - additional
+      - redis
+      - db
+    restart: always
+    environment:
+      - WORKERS_COUNT=5
+    env_file:
+      - services.env
+  
+  orders:
+    build:
+      context: ./services/orders
+      dockerfile: Dockerfile
+      args:
+        IMAGE_WITH_PACKAGES: python-image-with-packages:latest
+    depends_on:
+      - additional
+      - redis
+      - db
+    restart: always
+    environment:
+      - WORKERS_COUNT=5
+    env_file:
+      - services.env
+  
+  instruments:
+    build:
+      context: ./services/instruments
+      dockerfile: Dockerfile
+      args:
+        IMAGE_WITH_PACKAGES: python-image-with-packages:latest
+    depends_on:
+      - additional
+      - redis
+      - db
+    restart: always
+    environment:
+      - WORKERS_COUNT=5
+    env_file:
+      - services.env
+  
+  interface:
+    ports:
+      - "8080:5000"
+    build:
+      context: ./services/api
+      dockerfile: Dockerfile
+      args:
+        IMAGE_WITH_PACKAGES: python-image-with-packages:latest
+    depends_on:
+      - additional
+      - redis
+      - db
+    restart: always
+    environment:
+      - SERVER_PORT=5000
+    env_file:
+      - services.env
+      - secrets.env
+
+volumes:
+  pgdata:
+  redisdata:

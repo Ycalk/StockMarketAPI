@@ -27,6 +27,7 @@ users_client = MicroKitClient(RedisConfig.REDIS_SETTINGS, "Users")
 @router.delete(
     "/user/{user_id}",
     response_model=UserAPIModel,
+    tags=["user"],
     responses={
         500: {"model": ErrorResponse},
         408: {"model": ErrorResponse},
@@ -75,7 +76,6 @@ async def create_instrument(
 @router.delete(
     "/instrument/{ticker}",
     response_model=ResponseStatus,
-    tags=["user"],
     responses={500: {"model": ErrorResponse}, 408: {"model": ErrorResponse}},
 )
 async def delete_instrument(ticker: str, _: None = Depends(verify_admin_api_key)):

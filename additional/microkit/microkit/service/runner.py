@@ -98,4 +98,5 @@ class Runner:
 
     def run(self):
         with ProcessPoolExecutor(max_workers=self._workers_count) as executor:
-            executor.submit(self._start_worker)
+            for _ in range(self._workers_count):
+                executor.submit(self._start_worker)

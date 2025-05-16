@@ -2,7 +2,7 @@ import pytest
 from uuid import uuid4
 
 from ..src.orders import Orders
-from database import User, Instrument, Balance, Order
+from database import Transaction, User, Instrument, Balance, Order
 from shared_models.orders.requests.create_order import CreateOrderRequest
 from shared_models.orders.models.orders_bodies import LimitOrderBody
 from shared_models.orders.models.orders_bodies.direction import Direction
@@ -21,6 +21,14 @@ from shared_models.orders.requests.list_orders import (
 from shared_models.orders.requests.get_order import GetOrderRequest, GetOrderResponse
 from shared_models.orders.errors import OrderNotFoundError
 from shared_models.orders.requests.cancel_order import CancelOrderRequest
+from shared_models.orders.requests.get_orderbook import (
+    GetOrderbookRequest,
+    GetOrderbookResponse,
+)
+from shared_models.orders.requests.get_transactions import (
+    GetTransactionsRequest,
+    GetTransactionsResponse,
+)
 
 
 @pytest.mark.asyncio
@@ -215,3 +223,122 @@ async def test_cancel_order_wrong_user(ctx: dict, instrument: Instrument):
 
     with pytest.raises(OrderNotFoundError):
         await Orders.cancel_order(ctx, request)
+
+
+@pytest.mark.asyncio
+async def test_get_orderbook_returns_correct_levels(
+    ctx: dict, instrument: Instrument, user: User
+):
+    # BUY 5, price: 100
+    await Order.create(
+        user=user,
+        type=DatabaseOrderType.LIMIT,
+        direction=DatabaseOrderDirection.BUY,
+        instrument=instrument,
+        quantity=5,
+        price=100,
+    )
+
+    # BUY 3, price: 101
+    await Order.create(
+        user=user,
+        type=DatabaseOrderType.LIMIT,
+        direction=DatabaseOrderDirection.BUY,
+        instrument=instrument,
+        quantity=3,
+        price=101,
+    )
+
+    # BUY 2, price: 100
+    await Order.create(
+        user=user,
+        type=DatabaseOrderType.LIMIT,
+        direction=DatabaseOrderDirection.BUY,
+        instrument=instrument,
+        quantity=2,
+        price=100,
+    )
+
+    # SELL 2, price: 105
+    await Order.create(
+        user=user,
+        type=DatabaseOrderType.LIMIT,
+        direction=DatabaseOrderDirection.SELL,
+        instrument=instrument,
+        quantity=2,
+        price=105,
+    )
+
+    request = GetOrderbookRequest(ticker=instrument.ticker, limit=10)
+    response: GetOrderbookResponse = await Orders.get_orderbook(ctx, request)
+
+    assert isinstance(response, GetOrderbookResponse)
+    assert len(response.bid_levels) == 2
+    assert len(response.ask_levels) == 1
+
+    assert response.bid_levels[0].price == 101
+    assert response.bid_levels[0].qty == 3
+
+    assert response.bid_levels[1].price == 100
+    assert response.bid_levels[1].qty == 7
+
+    assert response.ask_levels[0].price == 105
+    assert response.ask_levels[0].qty == 2
+
+
+@pytest.mark.asyncio
+async def test_get_orderbook_instrument_not_found(ctx: dict):
+    with pytest.raises(InstrumentNotFoundError):
+        await Orders.get_orderbook(ctx, GetOrderbookRequest(ticker="UNKNOWN", limit=10))
+
+
+@pytest.mark.asyncio
+async def test_get_transactions_returns_sorted(ctx, instrument: Instrument, user: User):
+    order1 = await Order.create(
+        user=user,
+        type=DatabaseOrderType.LIMIT,
+        direction=DatabaseOrderDirection.SELL,
+        instrument=instrument,
+        quantity=100,
+        price=100,
+    )
+
+    order2 = await Order.create(
+        user=user,
+        type=DatabaseOrderType.LIMIT,
+        direction=DatabaseOrderDirection.BUY,
+        instrument=instrument,
+        quantity=100,
+        price=100,
+    )
+
+    await Transaction.create(
+        instrument=instrument,
+        quantity=10,
+        price=100,
+        buyer_order=order2,
+        seller_order=order1,
+    )
+
+    await Transaction.create(
+        instrument=instrument,
+        quantity=10,
+        price=200,
+        buyer_order=order2,
+        seller_order=order1,
+    )
+
+    response: GetTransactionsResponse = await Orders.get_transactions(
+        ctx, GetTransactionsRequest(ticker=instrument.ticker)
+    )
+
+    assert isinstance(response, GetTransactionsResponse)
+    assert len(response.root) == 2
+    assert response.root[0].price == 200
+    assert response.root[1].price == 100
+
+
+@pytest.mark.asyncio
+async def test_get_transactions_instrument_not_found(ctx: dict):
+    with pytest.raises(InstrumentNotFoundError):
+        await Orders.get_transactions(ctx, GetTransactionsRequest(ticker="UNKNOWN"))

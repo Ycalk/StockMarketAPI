@@ -159,10 +159,12 @@ async def test_limit_buy_order_trading_with_yourself_partial_fill(
 
 
 @pytest.mark.asyncio
-async def test_limit_order_full_fill(ctx: dict, instrument: Instrument, rub: Instrument):
+async def test_limit_order_full_fill(
+    ctx: dict, instrument: Instrument, rub: Instrument
+):
     seller = await User.create(name="Seller")
     buyer = await User.create(name="Buyer")
-    
+
     await Balance.create(user=seller, instrument=instrument, amount=10)
     await Balance.create(user=buyer, instrument=rub, amount=1000)
 
@@ -189,18 +191,22 @@ async def test_limit_order_full_fill(ctx: dict, instrument: Instrument, rub: Ins
     buy_order_id = (await Orders.create_order(ctx, buy_request)).order_id
     sell_order_id = (await Orders.create_order(ctx, sell_request)).order_id
 
-    buy_order = (await Orders.get_order(
-        ctx, GetOrderRequest(user_id=buyer.id, order_id=buy_order_id)
-    )).root
-    sell_order = (await Orders.get_order(
-        ctx, GetOrderRequest(user_id=seller.id, order_id=sell_order_id)
-    )).root
+    buy_order = (
+        await Orders.get_order(
+            ctx, GetOrderRequest(user_id=buyer.id, order_id=buy_order_id)
+        )
+    ).root
+    sell_order = (
+        await Orders.get_order(
+            ctx, GetOrderRequest(user_id=seller.id, order_id=sell_order_id)
+        )
+    ).root
 
     assert buy_order.status == OrderStatus.EXECUTED
     assert sell_order.status == OrderStatus.EXECUTED
     assert buy_order.filled == 10
     assert sell_order.filled == 10
-    
+
     seller_rub_balance = await Balance.get(user=seller, instrument=rub)
     buyer_rub_balance = await Balance.get(user=buyer, instrument=rub)
 
@@ -214,46 +220,68 @@ async def test_limit_order_full_fill(ctx: dict, instrument: Instrument, rub: Ins
 
 
 @pytest.mark.asyncio
-async def test_limit_orders_not_matched_due_to_price(ctx: dict, instrument: Instrument, rub: Instrument):
+async def test_limit_orders_not_matched_due_to_price(
+    ctx: dict, instrument: Instrument, rub: Instrument
+):
     seller = await User.create(name="Seller")
     buyer = await User.create(name="Buyer")
-    
+
     await Balance.create(user=seller, instrument=instrument, amount=10)
     await Balance.create(user=buyer, instrument=rub, amount=1000)
 
-    buy_order_id = (await Orders.create_order(ctx, CreateOrderRequest(
-        user_id=buyer.id,
-        body=LimitOrderBody(
-            direction=SharedModelOrderDirection.BUY,
-            ticker=instrument.ticker,
-            quantity=10,
-            price=90, 
-        ),
-    ))).order_id
+    buy_order_id = (
+        await Orders.create_order(
+            ctx,
+            CreateOrderRequest(
+                user_id=buyer.id,
+                body=LimitOrderBody(
+                    direction=SharedModelOrderDirection.BUY,
+                    ticker=instrument.ticker,
+                    quantity=10,
+                    price=90,
+                ),
+            ),
+        )
+    ).order_id
 
-    sell_order_id = (await Orders.create_order(ctx, CreateOrderRequest(
-        user_id=seller.id,
-        body=LimitOrderBody(
-            direction=SharedModelOrderDirection.SELL,
-            ticker=instrument.ticker,
-            quantity=10,
-            price=100,
-        ),
-    ))).order_id
+    sell_order_id = (
+        await Orders.create_order(
+            ctx,
+            CreateOrderRequest(
+                user_id=seller.id,
+                body=LimitOrderBody(
+                    direction=SharedModelOrderDirection.SELL,
+                    ticker=instrument.ticker,
+                    quantity=10,
+                    price=100,
+                ),
+            ),
+        )
+    ).order_id
 
-    buy_order = (await Orders.get_order(ctx, GetOrderRequest(user_id=buyer.id, order_id=buy_order_id))).root
-    sell_order = (await Orders.get_order(ctx, GetOrderRequest(user_id=seller.id, order_id=sell_order_id))).root
+    buy_order = (
+        await Orders.get_order(
+            ctx, GetOrderRequest(user_id=buyer.id, order_id=buy_order_id)
+        )
+    ).root
+    sell_order = (
+        await Orders.get_order(
+            ctx, GetOrderRequest(user_id=seller.id, order_id=sell_order_id)
+        )
+    ).root
 
     assert buy_order.filled == 0
     assert sell_order.filled == 0
     assert buy_order.status == OrderStatus.NEW
     assert sell_order.status == OrderStatus.NEW
-    
+
     seller_rub_balance = await Balance.get_or_none(user=seller, instrument=rub)
     buyer_rub_balance = await Balance.get(user=buyer, instrument=rub)
 
     seller_instrument_balance = await Balance.get(user=seller, instrument=instrument)
-    buyer_instrument_balance = await Balance.get_or_none(user=buyer, instrument=instrument)
+    buyer_instrument_balance = await Balance.get_or_none(
+        user=buyer, instrument=instrument
+    )
 
     assert buyer_instrument_balance is None
     assert seller_instrument_balance.amount == 10
@@ -262,52 +290,68 @@ async def test_limit_orders_not_matched_due_to_price(ctx: dict, instrument: Inst
 
 
 @pytest.mark.asyncio
-async def test_not_full_execute_cause_buyer_have_not_got_enough_rub(ctx: dict, instrument: Instrument, rub: Instrument):
+async def test_not_full_execute_cause_buyer_have_not_got_enough_rub(
+    ctx: dict, instrument: Instrument, rub: Instrument
+):
     seller = await User.create(name="Seller")
     buyer = await User.create(name="Buyer")
-    
+
     await Balance.create(user=seller, instrument=instrument, amount=10)
     await Balance.create(user=buyer, instrument=rub, amount=100)
 
-    buy_order_id = (await Orders.create_order(ctx, CreateOrderRequest(
-        user_id=buyer.id,
-        body=LimitOrderBody(
-            direction=SharedModelOrderDirection.BUY,
-            ticker=instrument.ticker,
-            quantity=10,
-            price=100, 
-        ),
-    ))).order_id
+    buy_order_id = (
+        await Orders.create_order(
+            ctx,
+            CreateOrderRequest(
+                user_id=buyer.id,
+                body=LimitOrderBody(
+                    direction=SharedModelOrderDirection.BUY,
+                    ticker=instrument.ticker,
+                    quantity=10,
+                    price=100,
+                ),
+            ),
+        )
+    ).order_id
 
-    sell_order_id = (await Orders.create_order(ctx, CreateOrderRequest(
-        user_id=seller.id,
-        body=LimitOrderBody(
-            direction=SharedModelOrderDirection.SELL,
-            ticker=instrument.ticker,
-            quantity=10,
-            price=100,
-        ),
-    ))).order_id
+    sell_order_id = (
+        await Orders.create_order(
+            ctx,
+            CreateOrderRequest(
+                user_id=seller.id,
+                body=LimitOrderBody(
+                    direction=SharedModelOrderDirection.SELL,
+                    ticker=instrument.ticker,
+                    quantity=10,
+                    price=100,
+                ),
+            ),
+        )
+    ).order_id
 
-    buy_order = (await Orders.get_order(
-        ctx, GetOrderRequest(user_id=buyer.id, order_id=buy_order_id)
-    )).root
-    sell_order = (await Orders.get_order(
-        ctx, GetOrderRequest(user_id=seller.id, order_id=sell_order_id)
-    )).root
-    
+    buy_order = (
+        await Orders.get_order(
+            ctx, GetOrderRequest(user_id=buyer.id, order_id=buy_order_id)
+        )
+    ).root
+    sell_order = (
+        await Orders.get_order(
+            ctx, GetOrderRequest(user_id=seller.id, order_id=sell_order_id)
+        )
+    ).root
+
     assert buy_order.filled == 1
     assert buy_order.status == OrderStatus.NEW
 
     assert sell_order.filled == 1
     assert sell_order.status == OrderStatus.NEW
-    
+
     seller_rub_balance = await Balance.get(user=seller, instrument=rub)
     buyer_rub_balance = await Balance.get(user=buyer, instrument=rub)
 
     seller_instrument_balance = await Balance.get(user=seller, instrument=instrument)
     buyer_instrument_balance = await Balance.get(user=buyer, instrument=instrument)
-    
+
     assert buyer_instrument_balance.amount == 1
     assert seller_instrument_balance.amount == 9
     assert seller_rub_balance.amount == 100
@@ -315,7 +359,9 @@ async def test_not_full_execute_cause_buyer_have_not_got_enough_rub(ctx: dict, i
 
 
 @pytest.mark.asyncio
-async def test_market_buy_order_full_fill(ctx: dict, instrument: Instrument, rub: Instrument):
+async def test_market_buy_order_full_fill(
+    ctx: dict, instrument: Instrument, rub: Instrument
+):
     seller = await User.create(name="Seller")
     buyer = await User.create(name="Buyer")
 
@@ -344,17 +390,21 @@ async def test_market_buy_order_full_fill(ctx: dict, instrument: Instrument, rub
     sell_limit_id = (await Orders.create_order(ctx, sell_limit)).order_id
     buy_market_id = (await Orders.create_order(ctx, buy_market)).order_id
 
-    buy_market_order = (await Orders.get_order(
-        ctx, GetOrderRequest(user_id=buyer.id, order_id=buy_market_id)
-    )).root
-    sell_limit_order = (await Orders.get_order(
-        ctx, GetOrderRequest(user_id=seller.id, order_id=sell_limit_id)
-    )).root
+    buy_market_order = (
+        await Orders.get_order(
+            ctx, GetOrderRequest(user_id=buyer.id, order_id=buy_market_id)
+        )
+    ).root
+    sell_limit_order = (
+        await Orders.get_order(
+            ctx, GetOrderRequest(user_id=seller.id, order_id=sell_limit_id)
+        )
+    ).root
 
     assert sell_limit_order.filled == 10
     assert buy_market_order.status == OrderStatus.EXECUTED
     assert sell_limit_order.status == OrderStatus.EXECUTED
-    
+
     seller_rub_balance = await Balance.get(user=seller, instrument=rub)
     buyer_rub_balance = await Balance.get(user=buyer, instrument=rub)
 
@@ -369,7 +419,9 @@ async def test_market_buy_order_full_fill(ctx: dict, instrument: Instrument, rub
 
 
 @pytest.mark.asyncio
-async def test_market_sell_order_partial_fill(ctx: dict, instrument: Instrument, rub: Instrument):
+async def test_market_sell_order_partial_fill(
+    ctx: dict, instrument: Instrument, rub: Instrument
+):
     seller = await User.create(name="Seller")
     buyer = await User.create(name="Buyer")
 
@@ -398,12 +450,16 @@ async def test_market_sell_order_partial_fill(ctx: dict, instrument: Instrument,
     buy_limit_id = (await Orders.create_order(ctx, buy_limit)).order_id
     sell_market_id = (await Orders.create_order(ctx, sell_market)).order_id
 
-    buy_limit_order = (await Orders.get_order(
-        ctx, GetOrderRequest(user_id=buyer.id, order_id=buy_limit_id)
-    )).root
-    sell_market_order = (await Orders.get_order(
-        ctx, GetOrderRequest(user_id=seller.id, order_id=sell_market_id)
-    )).root
+    buy_limit_order = (
+        await Orders.get_order(
+            ctx, GetOrderRequest(user_id=buyer.id, order_id=buy_limit_id)
+        )
+    ).root
+    sell_market_order = (
+        await Orders.get_order(
+            ctx, GetOrderRequest(user_id=seller.id, order_id=sell_market_id)
+        )
+    ).root
 
     assert buy_limit_order.filled == 3
     assert buy_limit_order.status == OrderStatus.EXECUTED

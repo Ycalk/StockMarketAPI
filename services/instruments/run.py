@@ -2,6 +2,7 @@ from src.instruments import Instruments  # type: ignore
 from microkit.service import Runner
 from src.config import Config  # type: ignore
 from microkit.service.logs import default_log_config
+from arq.connections import RedisSettings
 
 
 if __name__ == "__main__":
@@ -11,5 +12,9 @@ if __name__ == "__main__":
         "level": logging_level,
         "handlers": ["arq.standard"],
     }
-    runner = Runner(Instruments, logging_config=logging_config)
+    runner = Runner(
+        Instruments,
+        logging_config=logging_config,
+        redis_settings=RedisSettings(Config.REDIS_HOST, Config.REDIS_PORT),
+    )
     runner.run()

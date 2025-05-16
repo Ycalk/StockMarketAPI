@@ -9,11 +9,22 @@ from shared_models.instruments.get_instruments import GetInstrumentsResponse
 import asyncio
 from shared_models.users.errors import CriticalError as UserCriticalError
 from shared_models.instruments.errors import CriticalError as InstrumentCriticalError
+from shared_models.orders.requests.get_orderbook import (
+    GetOrderbookRequest,
+    GetOrderbookResponse,
+)
+from shared_models.orders.requests.get_transactions import (
+    GetTransactionsRequest,
+    GetTransactionsResponse,
+)
+from shared_models.orders.errors import CriticalError as OrdersCriticalError
+from shared_models.instruments.errors import InstrumentNotFoundError
 
 
 router = APIRouter(prefix="/public", tags=["public"])
 users_client = MicroKitClient(RedisConfig.REDIS_SETTINGS, "Users")
 instruments_client = MicroKitClient(RedisConfig.REDIS_SETTINGS, "Instruments")
+orders_client = MicroKitClient(RedisConfig.REDIS_SETTINGS, "Orders")
 
 
 @router.post(
@@ -48,4 +59,54 @@ async def get_instruments():
     except asyncio.TimeoutError:
         raise HTTPException(status_code=408, detail="Request Timeout")
     except InstrumentCriticalError as e:
+        raise HTTPException(status_code=500, detail=e.message)
+
+
+@router.get(
+    "/orderbook/{ticker}",
+    response_model=GetOrderbookResponse,
+    responses={
+        500: {"model": ErrorResponse},
+        408: {"model": ErrorResponse},
+        404: {"model": ErrorResponse},
+    },
+)
+async def get_orderbook(ticker: str, limit: int):
+    job = await orders_client(
+        "get_orderbook", GetOrderbookRequest(ticker=ticker, limit=limit)
+    )
+    if job is None:
+        raise HTTPException(500, "Cannot create job")
+    try:
+        return await job.result(timeout=10)
+    except InstrumentNotFoundError as e:
+        raise HTTPException(status_code=404, detail=e.message)
+    except asyncio.TimeoutError:
+        raise HTTPException(status_code=408, detail="Request Timeout")
+    except OrdersCriticalError as e:
+        raise HTTPException(status_code=500, detail=e.message)
+
+
+@router.get(
+    "/transactions/{ticker}",
+    response_model=GetTransactionsResponse,
+    responses={
+        500: {"model": ErrorResponse},
+        408: {"model": ErrorResponse},
+        404: {"model": ErrorResponse},
+    },
+)
+async def get_transactions(ticker: str, limit: int):
+    job = await orders_client(
+        "get_transactions", GetTransactionsRequest(ticker=ticker, limit=limit)
+    )
+    if job is None:
+        raise HTTPException(500, "Cannot create job")
+    try:
+        return await job.result(timeout=10)
+    except InstrumentNotFoundError as e:
+        raise HTTPException(status_code=404, detail=e.message)
+    except asyncio.TimeoutError:
+        raise HTTPException(status_code=408, detail="Request Timeout")
+    except OrdersCriticalError as e:
         raise HTTPException(status_code=500, detail=e.message)

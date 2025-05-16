@@ -12,7 +12,7 @@ class LimitOrder(BaseModel):
     timestamp: datetime
     body: LimitOrderBody
     filled: int
-    
+
     @field_validator("filled")
     @classmethod
     def validate_filled(cls, v: int) -> int:

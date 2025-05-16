@@ -32,6 +32,16 @@ from shared_models.orders.requests.list_orders import (
     ListOrdersRequest,
     ListOrdersResponse,
 )
+from shared_models.orders.requests.get_orderbook import (
+    GetOrderbookRequest,
+    GetOrderbookResponse,
+    OrderbookItem,
+)
+from shared_models.orders.requests.get_transactions import (
+    GetTransactionsRequest,
+    GetTransactionsResponse,
+    Transaction as TransactionSharedModel,
+)
 from shared_models.orders.requests.get_order import (
     GetOrderRequest,
     GetOrderResponse,
@@ -462,21 +472,85 @@ class Orders(Service):
             except Exception as e:
                 self.logger.info(f"Unexpected error: {e}")
                 raise CriticalError(f"Unexpected error: {e}")
-    
+
     @service_method
     async def get_orderbook(
-        self: "Orders", redis: "ArqRedis", request: CancelOrderRequest
-    ) -> None:
+        self: "Orders", redis: "ArqRedis", request: GetOrderbookRequest
+    ) -> GetOrderbookResponse:
         async with in_transaction() as conn:
             try:
-                order = await Order.get_or_none(
-                    id=request.order_id, using_db=conn
-                ).prefetch_related("user")
-                if not order or order.user.id != request.user_id:
-                    raise OrderNotFoundError(str(request.order_id))
-                order.status = DatabaseOrderStatus.CANCELLED
-                await order.save(using_db=conn)
-            except OrderNotFoundError as ve:
+                instrument = await Instrument.get_or_none(ticker=request.ticker)
+                if not instrument:
+                    raise InstrumentNotFoundError(str(request.ticker))
+                orders = (
+                    await Order.filter(
+                        instrument=instrument,
+                        status=DatabaseOrderStatus.NEW,
+                        type=DatabaseOrderType.LIMIT,
+                    )
+                    .using_db(conn)
+                    .all()
+                )
+                buy: dict[int, int] = {}
+                sell: dict[int, int] = {}
+                for order in orders:
+                    if order.direction == DatabaseOrderDirection.BUY:
+                        buy[order.price] = (
+                            buy.get(order.price, 0) + order.quantity - order.filled
+                        )
+                    else:
+                        sell[order.price] = (
+                            sell.get(order.price, 0) + order.quantity - order.filled
+                        )
+                return GetOrderbookResponse(
+                    bid_levels=[
+                        OrderbookItem(price=price, qty=qty)
+                        for price, qty in sorted(buy.items(), key=lambda x: -x[0])[
+                            : request.limit
+                        ]
+                    ],
+                    ask_levels=[
+                        OrderbookItem(price=price, qty=qty)
+                        for price, qty in sorted(sell.items(), key=lambda x: x[0])[
+                            : request.limit
+                        ]
+                    ],
+                )
+            except InstrumentNotFoundError as ve:
+                self.logger.error(f"Validation error: {ve}")
+                raise
+            except Exception as e:
+                self.logger.info(f"Unexpected error: {e}")
+                raise CriticalError(f"Unexpected error: {e}")
+
+    @service_method
+    async def get_transactions(
+        self: "Orders", redis: "ArqRedis", request: GetTransactionsRequest
+    ) -> GetTransactionsResponse:
+        async with in_transaction() as conn:
+            try:
+                instrument = await Instrument.get_or_none(ticker=request.ticker)
+                if not instrument:
+                    raise InstrumentNotFoundError(str(request.ticker))
+                transactions = (
+                    await Transaction.filter(instrument=instrument)
+                    .using_db(conn)
+                    .order_by("-executed_at")
+                    .all()
+                )
+
+                return GetTransactionsResponse(
+                    root=[
+                        TransactionSharedModel(
+                            ticker=instrument.ticker,
+                            amount=tx.quantity,
+                            price=tx.price,
+                            timestamp=tx.executed_at,
+                        )
+                        for tx in transactions
+                    ]
+                )
+            except InstrumentNotFoundError as ve:
                 self.logger.error(f"Validation error: {ve}")
                 raise
             except Exception as e:

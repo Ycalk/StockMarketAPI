@@ -1,6 +1,5 @@
-from typing import Union
+from datetime import datetime
 from pydantic import BaseModel, field_validator, RootModel
-from ..models.orders_bodies import LimitOrderBody, MarketOrderBody
 import re
 
 
@@ -23,5 +22,26 @@ class GetTransactionsRequest(BaseModel):
         return v
 
 
+class Transaction(BaseModel):
+    ticker: str
+    amount: int
+    price: int
+    timestamp: datetime
+
+    @field_validator("ticker")
+    @classmethod
+    def validate_ticker(cls, v: str) -> str:
+        if not re.match(r"^[A-Z]{2,10}$", v):
+            raise ValueError("Ticker must be uppercase and contain 2 to 10 characters.")
+        return v
+
+    @field_validator("amount", "price")
+    @classmethod
+    def validate_positive(cls, v: int) -> int:
+        if v <= 0:
+            raise ValueError("Amount and price must be positive integers.")
+        return v
+
+
 class GetTransactionsResponse(RootModel):
-    root: list[Union[LimitOrderBody, MarketOrderBody]]
+    root: list[Transaction]

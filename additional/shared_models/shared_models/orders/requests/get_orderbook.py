@@ -40,6 +40,6 @@ class OrderbookItem(BaseModel):
         return v
 
 
-class GetOrderResponse(BaseModel):
+class GetOrderbookResponse(BaseModel):
     bid_levels: list[OrderbookItem]
     ask_levels: list[OrderbookItem]

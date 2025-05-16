@@ -35,6 +35,10 @@ class Users(Service):
     ) -> CreateUserResponse:
         try:
             user = await User.create(**request.model_dump(exclude_unset=True))
+            rub_instrument, _ = await Instrument.get_or_create(
+                ticker="RUB", defaults={"name": "Russian Ruble"}
+            )
+            await Balance.create(user=user, instrument=rub_instrument, amount=0)
             self.logger.info(f"User created with ID: {user.id}")
             return CreateUserResponse(user=UserSharedModel.model_validate(user))
         except Exception as e:

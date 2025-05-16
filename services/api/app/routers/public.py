@@ -71,7 +71,7 @@ async def get_instruments():
         404: {"model": ErrorResponse},
     },
 )
-async def get_orderbook(ticker: str, limit: int):
+async def get_orderbook(ticker: str, limit: int = 10):
     job = await orders_client(
         "get_orderbook", GetOrderbookRequest(ticker=ticker, limit=limit)
     )
@@ -96,7 +96,7 @@ async def get_orderbook(ticker: str, limit: int):
         404: {"model": ErrorResponse},
     },
 )
-async def get_transactions(ticker: str, limit: int):
+async def get_transactions(ticker: str, limit: int = 10):
     job = await orders_client(
         "get_transactions", GetTransactionsRequest(ticker=ticker, limit=limit)
     )

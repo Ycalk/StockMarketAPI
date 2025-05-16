@@ -16,5 +16,6 @@ if __name__ == "__main__":
         Orders,
         logging_config=logging_config,
         redis_settings=RedisSettings(Config.REDIS_HOST, Config.REDIS_PORT),
+        workers_count=Config.WORKERS_COUNT,
     )
     runner.run()

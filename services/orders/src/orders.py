@@ -462,3 +462,23 @@ class Orders(Service):
             except Exception as e:
                 self.logger.info(f"Unexpected error: {e}")
                 raise CriticalError(f"Unexpected error: {e}")
+    
+    @service_method
+    async def get_orderbook(
+        self: "Orders", redis: "ArqRedis", request: CancelOrderRequest
+    ) -> None:
+        async with in_transaction() as conn:
+            try:
+                order = await Order.get_or_none(
+                    id=request.order_id, using_db=conn
+                ).prefetch_related("user")
+                if not order or order.user.id != request.user_id:
+                    raise OrderNotFoundError(str(request.order_id))
+                order.status = DatabaseOrderStatus.CANCELLED
+                await order.save(using_db=conn)
+            except OrderNotFoundError as ve:
+                self.logger.error(f"Validation error: {ve}")
+                raise
+            except Exception as e:
+                self.logger.info(f"Unexpected error: {e}")
+                raise CriticalError(f"Unexpected error: {e}")

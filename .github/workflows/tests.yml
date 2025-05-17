@@ -53,6 +53,8 @@ jobs:
           pip install ../../additional/database
           pip install ../../additional/microkit
           pip install ../../additional/shared_models
+          pip install pytest==8.3.5
+          pip install pytest-asyncio==0.26.0
 
       - name: Run tests
         run: |

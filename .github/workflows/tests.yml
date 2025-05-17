@@ -6,6 +6,23 @@ on:
       - main
 
 jobs:
+  test-docker-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Compose
+        run: |
+          docker-compose --version
+
+      - name: Build docker images
+        run: |
+          docker-compose build --pull
+
   test-users:
     runs-on: ubuntu-latest
     defaults:

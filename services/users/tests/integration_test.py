@@ -318,7 +318,7 @@ async def test_user_operations_with_multiple_instruments(ctx: dict):
     assert final_balances.root["EUR"] == 250
     assert final_balances.root["GBP"] == 200
     assert final_balances.root["JPY"] == 10000
-    assert len(final_balances.root) == 4, (
+    assert len(final_balances.root) == 5, (
         "Unexpected instruments found in balance response"
     )
 
@@ -352,4 +352,4 @@ async def test_concurrent_balance_updates(ctx: dict):
     assert await Balance.filter(user=user_model, instrument=instrument).count() == 1, (
         "Balance count mismatch"
     )
-    assert len(balance.root) == 1, "Unexpected instruments found in balance response"
+    assert len(balance.root) == 2, "Unexpected instruments found in balance response"

@@ -20,8 +20,17 @@ class UserNotFoundError(Exception):
 class InsufficientFundsError(Exception):
     def __init__(self, user_id: str, requested: int, available: int):
         msg = f"User {user_id} has insufficient funds. Requested: {requested}, Available: {available}."
+        self.user_id = user_id
+        self.requested = requested
+        self.available = available
         super().__init__(msg)
         self.message = msg
 
     def __str__(self):
         return f"InsufficientFundsError: {self.message}"
+    
+    def __reduce__(self):
+        return (
+            self.__class__,
+            (self.user_id, self.requested, self.available)
+        )

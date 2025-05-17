@@ -31,3 +31,67 @@ jobs:
       - name: Run tests
         run: |
           pytest tests/
+  
+  test-instruments:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/instruments
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install ../../additional/database
+          pip install ../../additional/microkit
+          pip install ../../additional/shared_models
+
+      - name: Run tests
+        run: |
+          pytest tests/
+  
+  test-orders:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/orders
+    
+    services:
+      redis:
+        image: redis:latest
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install ../../additional/database
+          pip install ../../additional/microkit
+          pip install ../../additional/shared_models
+
+      - name: Run tests
+        run: |
+          pytest tests/

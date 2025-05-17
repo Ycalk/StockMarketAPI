@@ -21,7 +21,7 @@ jobs:
 
       - name: Build docker images
         run: |
-          docker compose build --pull
+          docker compose build
 
   test-users:
     runs-on: ubuntu-latest

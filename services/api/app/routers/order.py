@@ -7,6 +7,8 @@ from shared_models.orders.requests.list_orders import (
     ListOrdersRequest,
     ListOrdersResponse,
 )
+from shared_models.instruments.errors import InstrumentNotFoundError
+from shared_models.users.errors import InsufficientFundsError
 from shared_models.orders.requests.get_order import GetOrderRequest, GetOrderResponse
 from shared_models.orders.errors import OrderNotFoundError
 from shared_models.users.errors import UserNotFoundError
@@ -30,7 +32,12 @@ orders_client = MicroKitClient(RedisConfig.REDIS_SETTINGS, "Orders")
 @router.post(
     "",
     response_model=CreateOrderAPIResponse,
-    responses={500: {"model": ErrorResponse}, 408: {"model": ErrorResponse}},
+    responses={
+        500: {"model": ErrorResponse, "description": "Internal Server Error"},
+        408: {"model": ErrorResponse, "description": "Request Timeout"},
+        404: {"model": ErrorResponse, "description": "User or instrument not found"},
+        403: {"model": ErrorResponse, "description": "Insufficient funds"},
+    },
 )
 async def create_order(
     request: Union[LimitOrderBody, MarketOrderBody],
@@ -44,21 +51,25 @@ async def create_order(
     try:
         result: CreateOrderResponse = await job.result(timeout=10)
         return CreateOrderAPIResponse(success=True, order_id=result.order_id)
+    except UserNotFoundError:
+        raise HTTPException(status_code=404, detail="User not found")
+    except InstrumentNotFoundError:
+        raise HTTPException(status_code=404, detail="Instrument not found")
+    except InsufficientFundsError:
+        raise HTTPException(status_code=403, detail="Insufficient funds")
     except asyncio.TimeoutError:
         raise HTTPException(status_code=408, detail="Request Timeout")
     except OrdersCriticalError as e:
         raise HTTPException(status_code=500, detail=e.message)
-    except Exception:
-        return CreateOrderAPIResponse(success=False, order_id=None)
 
 
 @router.get(
     "",
     response_model=ListOrdersResponse,
     responses={
-        500: {"model": ErrorResponse},
-        408: {"model": ErrorResponse},
-        404: {"model": ErrorResponse},
+        500: {"model": ErrorResponse, "description": "Internal Server Error"},
+        408: {"model": ErrorResponse, "description": "Request Timeout"},
+        404: {"model": ErrorResponse, "description": "User not found"},
     },
 )
 async def list_orders(user_id: UUID = Depends(verify_user_api_key)):
@@ -79,9 +90,9 @@ async def list_orders(user_id: UUID = Depends(verify_user_api_key)):
     "/{order_id}",
     response_model=GetOrderResponse,
     responses={
-        500: {"model": ErrorResponse},
-        408: {"model": ErrorResponse},
-        404: {"model": ErrorResponse},
+        500: {"model": ErrorResponse, "description": "Internal Server Error"},
+        408: {"model": ErrorResponse, "description": "Request Timeout"},
+        404: {"model": ErrorResponse, "description": "Order not found"},
     },
 )
 async def get_order(order_id: UUID, user_id: UUID = Depends(verify_user_api_key)):
@@ -104,9 +115,9 @@ async def get_order(order_id: UUID, user_id: UUID = Depends(verify_user_api_key)
     "/{order_id}",
     response_model=ResponseStatus,
     responses={
-        500: {"model": ErrorResponse},
-        408: {"model": ErrorResponse},
-        404: {"model": ErrorResponse},
+        500: {"model": ErrorResponse, "description": "Internal Server Error"},
+        408: {"model": ErrorResponse, "description": "Request Timeout"},
+        404: {"model": ErrorResponse, "description": "Order not found"},
     },
 )
 async def cancel_order(order_id: UUID, user_id: UUID = Depends(verify_user_api_key)):
@@ -118,9 +129,9 @@ async def cancel_order(order_id: UUID, user_id: UUID = Depends(verify_user_api_k
     try:
         await job.result(timeout=10)
         return ResponseStatus(success=True)
+    except OrderNotFoundError:
+        raise HTTPException(status_code=404, detail="Order not found")
     except asyncio.TimeoutError:
         raise HTTPException(status_code=408, detail="Request Timeout")
     except OrdersCriticalError as e:
         raise HTTPException(status_code=500, detail=e.message)
-    except Exception as _:
-        return ResponseStatus(success=False)

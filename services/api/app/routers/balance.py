@@ -17,8 +17,8 @@ users_client = MicroKitClient(RedisConfig.REDIS_SETTINGS, "Users")
     "",
     response_model=GetBalanceResponse,
     responses={
-        500: {"model": ErrorResponse},
-        408: {"model": ErrorResponse},
+        500: {"model": ErrorResponse, "description": "Internal Server Error"},
+        408: {"model": ErrorResponse, "description": "Request Timeout"},
         404: {"model": ErrorResponse, "description": "User not found"},
     },
 )

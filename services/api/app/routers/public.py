@@ -30,7 +30,7 @@ orders_client = MicroKitClient(RedisConfig.REDIS_SETTINGS, "Orders")
 @router.post(
     "/register",
     response_model=UserAPIModel,
-    responses={500: {"model": ErrorResponse}, 408: {"model": ErrorResponse}},
+    responses={500: {"model": ErrorResponse, "description": "Internal Server Error"}, 408: {"model": ErrorResponse, "description": "Request Timeout"}},
 )
 async def register_user(request: RegisterUserRequest):
     job = await users_client("create_user", CreateUserRequest(**request.model_dump()))
@@ -48,7 +48,7 @@ async def register_user(request: RegisterUserRequest):
 @router.get(
     "/instrument",
     response_model=GetInstrumentsResponse,
-    responses={500: {"model": ErrorResponse}, 408: {"model": ErrorResponse}},
+    responses={500: {"model": ErrorResponse, "description": "Internal Server Error"}, 408: {"model": ErrorResponse, "description": "Request Timeout"}},
 )
 async def get_instruments():
     job = await instruments_client("get_instruments")
@@ -66,9 +66,9 @@ async def get_instruments():
     "/orderbook/{ticker}",
     response_model=GetOrderbookResponse,
     responses={
-        500: {"model": ErrorResponse},
-        408: {"model": ErrorResponse},
-        404: {"model": ErrorResponse},
+        500: {"model": ErrorResponse, "description": "Internal Server Error"},
+        408: {"model": ErrorResponse, "description": "Request Timeout"},
+        404: {"model": ErrorResponse, "description": "Orderbook not found"},
     },
 )
 async def get_orderbook(ticker: str, limit: int = 10):
@@ -91,9 +91,9 @@ async def get_orderbook(ticker: str, limit: int = 10):
     "/transactions/{ticker}",
     response_model=GetTransactionsResponse,
     responses={
-        500: {"model": ErrorResponse},
-        408: {"model": ErrorResponse},
-        404: {"model": ErrorResponse},
+        500: {"model": ErrorResponse, "description": "Internal Server Error"},
+        408: {"model": ErrorResponse, "description": "Request Timeout"},
+        404: {"model": ErrorResponse, "description": "Instrument not found"},
     },
 )
 async def get_transactions(ticker: str, limit: int = 10):

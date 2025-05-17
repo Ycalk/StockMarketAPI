@@ -333,7 +333,7 @@ class Orders(Service):
                 body=MarketOrderBody(
                     direction=SharedModelOrderDirection(database_model.direction.value),
                     ticker=database_model.instrument.ticker,
-                    quantity=database_model.quantity,
+                    qty=database_model.quantity,
                 ),
             )
         else:
@@ -345,7 +345,7 @@ class Orders(Service):
                 body=LimitOrderBody(
                     direction=SharedModelOrderDirection(database_model.direction.value),
                     ticker=database_model.instrument.ticker,
-                    quantity=database_model.quantity,
+                    qty=database_model.quantity,
                     price=database_model.price,
                 ),
                 filled=database_model.filled,
@@ -371,7 +371,7 @@ class Orders(Service):
                 if request.body.direction == Direction.SELL:
                     if balance is None:
                         raise InsufficientFundsError(
-                            str(user.id), request.body.quantity, 0
+                            str(user.id), request.body.qty, 0
                         )
                     maximum_to_sell = (
                         balance.amount
@@ -379,9 +379,9 @@ class Orders(Service):
                         if balance
                         else 0
                     )
-                    if maximum_to_sell < request.body.quantity:
+                    if maximum_to_sell < request.body.qty:
                         raise InsufficientFundsError(
-                            str(user.id), request.body.quantity, maximum_to_sell
+                            str(user.id), request.body.qty, maximum_to_sell
                         )
 
                 order_data = {
@@ -393,7 +393,7 @@ class Orders(Service):
                     if request.body.direction == Direction.SELL
                     else DatabaseOrderDirection.BUY,
                     "instrument": instrument,
-                    "quantity": request.body.quantity,
+                    "quantity": request.body.qty,
                 }
 
                 if isinstance(request.body, LimitOrderBody):

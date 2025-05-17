@@ -6,7 +6,7 @@ from .direction import Direction
 class LimitOrderBody(BaseModel):
     direction: Direction
     ticker: str
-    quantity: int
+    qty: int
     price: int
 
     @field_validator("ticker")
@@ -16,7 +16,7 @@ class LimitOrderBody(BaseModel):
             raise ValueError("Ticker must be uppercase and contain 2 to 10 characters.")
         return v
 
-    @field_validator("quantity")
+    @field_validator("qty")
     @classmethod
     def validate_quantity(cls, v: int) -> int:
         if v <= 0:

@@ -6,7 +6,7 @@ from .direction import Direction
 class MarketOrderBody(BaseModel):
     direction: Direction
     ticker: str
-    quantity: int
+    qty: int
 
     @field_validator("ticker")
     @classmethod
@@ -15,7 +15,7 @@ class MarketOrderBody(BaseModel):
             raise ValueError("Ticker must be uppercase and contain 2 to 10 characters.")
         return v
 
-    @field_validator("quantity")
+    @field_validator("qty")
     @classmethod
     def validate_quantity(cls, v: int) -> int:
         if v <= 0:

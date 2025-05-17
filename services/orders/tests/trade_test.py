@@ -34,7 +34,7 @@ async def test_limit_buy_order_trading_partial_fill(
         body=LimitOrderBody(
             direction=SharedModelOrderDirection.BUY,
             ticker=instrument.ticker,
-            quantity=10,
+            qty=10,
             price=100,
         ),
     )
@@ -44,7 +44,7 @@ async def test_limit_buy_order_trading_partial_fill(
         body=LimitOrderBody(
             direction=SharedModelOrderDirection.SELL,
             ticker=instrument.ticker,
-            quantity=5,
+            qty=5,
             price=100,
         ),
     )
@@ -112,7 +112,7 @@ async def test_limit_buy_order_trading_with_yourself_partial_fill(
         body=LimitOrderBody(
             direction=SharedModelOrderDirection.BUY,
             ticker=instrument.ticker,
-            quantity=10,
+            qty=10,
             price=100,
         ),
     )
@@ -122,7 +122,7 @@ async def test_limit_buy_order_trading_with_yourself_partial_fill(
         body=LimitOrderBody(
             direction=SharedModelOrderDirection.SELL,
             ticker=instrument.ticker,
-            quantity=5,
+            qty=5,
             price=100,
         ),
     )
@@ -173,7 +173,7 @@ async def test_limit_order_full_fill(
         body=LimitOrderBody(
             direction=SharedModelOrderDirection.BUY,
             ticker=instrument.ticker,
-            quantity=10,
+            qty=10,
             price=100,
         ),
     )
@@ -183,7 +183,7 @@ async def test_limit_order_full_fill(
         body=LimitOrderBody(
             direction=SharedModelOrderDirection.SELL,
             ticker=instrument.ticker,
-            quantity=10,
+            qty=10,
             price=100,
         ),
     )
@@ -237,7 +237,7 @@ async def test_limit_orders_not_matched_due_to_price(
                 body=LimitOrderBody(
                     direction=SharedModelOrderDirection.BUY,
                     ticker=instrument.ticker,
-                    quantity=10,
+                    qty=10,
                     price=90,
                 ),
             ),
@@ -252,7 +252,7 @@ async def test_limit_orders_not_matched_due_to_price(
                 body=LimitOrderBody(
                     direction=SharedModelOrderDirection.SELL,
                     ticker=instrument.ticker,
-                    quantity=10,
+                    qty=10,
                     price=100,
                 ),
             ),
@@ -307,7 +307,7 @@ async def test_not_full_execute_cause_buyer_have_not_got_enough_rub(
                 body=LimitOrderBody(
                     direction=SharedModelOrderDirection.BUY,
                     ticker=instrument.ticker,
-                    quantity=10,
+                    qty=10,
                     price=100,
                 ),
             ),
@@ -322,7 +322,7 @@ async def test_not_full_execute_cause_buyer_have_not_got_enough_rub(
                 body=LimitOrderBody(
                     direction=SharedModelOrderDirection.SELL,
                     ticker=instrument.ticker,
-                    quantity=10,
+                    qty=10,
                     price=100,
                 ),
             ),
@@ -373,7 +373,7 @@ async def test_market_buy_order_full_fill(
         body=LimitOrderBody(
             direction=SharedModelOrderDirection.SELL,
             ticker=instrument.ticker,
-            quantity=10,
+            qty=10,
             price=100,
         ),
     )
@@ -383,7 +383,7 @@ async def test_market_buy_order_full_fill(
         body=MarketOrderBody(
             direction=SharedModelOrderDirection.BUY,
             ticker=instrument.ticker,
-            quantity=10,
+            qty=10,
         ),
     )
 
@@ -433,7 +433,7 @@ async def test_market_sell_order_partial_fill(
         body=LimitOrderBody(
             direction=SharedModelOrderDirection.BUY,
             ticker=instrument.ticker,
-            quantity=3,
+            qty=3,
             price=100,
         ),
     )
@@ -443,7 +443,7 @@ async def test_market_sell_order_partial_fill(
         body=MarketOrderBody(
             direction=SharedModelOrderDirection.SELL,
             ticker=instrument.ticker,
-            quantity=5,
+            qty=5,
         ),
     )
 

@@ -38,7 +38,7 @@ async def test_create_order_success_sell_limit(
     await Balance.create(user=user, instrument=instrument, amount=100)
 
     body = LimitOrderBody(
-        direction=Direction.SELL, ticker=instrument.ticker, quantity=50, price=100
+        direction=Direction.SELL, ticker=instrument.ticker, qty=50, price=100
     )
     request = CreateOrderRequest(user_id=user.id, body=body)
 
@@ -60,7 +60,7 @@ async def test_create_order_user_not_found(ctx: dict, instrument: Instrument):
     request = CreateOrderRequest(
         user_id=uuid4(),
         body=LimitOrderBody(
-            direction=Direction.SELL, ticker=instrument.ticker, quantity=10, price=100
+            direction=Direction.SELL, ticker=instrument.ticker, qty=10, price=100
         ),
     )
 
@@ -73,7 +73,7 @@ async def test_create_order_instrument_not_found(ctx: dict, user: User):
     request = CreateOrderRequest(
         user_id=user.id,
         body=LimitOrderBody(
-            direction=Direction.SELL, ticker="NOTEXIST", quantity=10, price=100
+            direction=Direction.SELL, ticker="NOTEXIST", qty=10, price=100
         ),
     )
 
@@ -90,7 +90,7 @@ async def test_create_order_insufficient_funds(
     request = CreateOrderRequest(
         user_id=user.id,
         body=LimitOrderBody(
-            direction=Direction.SELL, ticker=instrument.ticker, quantity=10, price=100
+            direction=Direction.SELL, ticker=instrument.ticker, qty=10, price=100
         ),
     )
 

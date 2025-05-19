@@ -28,9 +28,6 @@ class InsufficientFundsError(Exception):
 
     def __str__(self):
         return f"InsufficientFundsError: {self.message}"
-    
+
     def __reduce__(self):
-        return (
-            self.__class__,
-            (self.user_id, self.requested, self.available)
-        )
+        return (self.__class__, (self.user_id, self.requested, self.available))

@@ -311,8 +311,8 @@ async def test_raises_insufficient_funds_on_buy(
                     qty=10,
                     price=100,
                 ),
-        ),
-    )
+            ),
+        )
 
 
 @pytest.mark.asyncio

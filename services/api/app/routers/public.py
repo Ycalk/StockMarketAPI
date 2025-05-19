@@ -33,7 +33,10 @@ logger = get_logger("public")
 @router.post(
     "/register",
     response_model=UserAPIModel,
-    responses={500: {"model": ErrorResponse, "description": "Internal Server Error"}, 408: {"model": ErrorResponse, "description": "Request Timeout"}},
+    responses={
+        500: {"model": ErrorResponse, "description": "Internal Server Error"},
+        408: {"model": ErrorResponse, "description": "Request Timeout"},
+    },
 )
 async def register_user(request: RegisterUserRequest):
     start = time.time()
@@ -58,7 +61,10 @@ async def register_user(request: RegisterUserRequest):
 @router.get(
     "/instrument",
     response_model=GetInstrumentsResponse,
-    responses={500: {"model": ErrorResponse, "description": "Internal Server Error"}, 408: {"model": ErrorResponse, "description": "Request Timeout"}},
+    responses={
+        500: {"model": ErrorResponse, "description": "Internal Server Error"},
+        408: {"model": ErrorResponse, "description": "Request Timeout"},
+    },
 )
 async def get_instruments():
     start = time.time()

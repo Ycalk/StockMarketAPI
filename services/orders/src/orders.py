@@ -320,7 +320,7 @@ class Orders(Service):
             .all()
         )
         return sum(order.quantity - order.filled for order in user_orders)
-    
+
     async def get_lock_rubs(self, user: User, context: TransactionContext) -> int:
         user_orders = await (
             Order.filter(
@@ -331,7 +331,9 @@ class Orders(Service):
             .using_db(context)  # type: ignore
             .all()
         )
-        return sum((order.quantity - order.filled) * order.price  for order in user_orders)
+        return sum(
+            (order.quantity - order.filled) * order.price for order in user_orders
+        )
 
     def convert_database_model(
         self, database_model: Order
@@ -382,9 +384,7 @@ class Orders(Service):
 
                 if request.body.direction == Direction.SELL:
                     if balance is None:
-                        raise InsufficientFundsError(
-                            str(user.id), request.body.qty, 0
-                        )
+                        raise InsufficientFundsError(str(user.id), request.body.qty, 0)
                     maximum_to_sell = (
                         balance.amount
                         - await self.get_lock_balance(user, instrument, conn)
@@ -395,16 +395,24 @@ class Orders(Service):
                         raise InsufficientFundsError(
                             str(user.id), request.body.qty, maximum_to_sell
                         )
-                elif request.body.direction == Direction.BUY and isinstance(request.body, LimitOrderBody):
-                    rub_balance = await Balance.get_or_none(user=user, instrument_id="RUB", using_db=conn)
+                elif request.body.direction == Direction.BUY and isinstance(
+                    request.body, LimitOrderBody
+                ):
+                    rub_balance = await Balance.get_or_none(
+                        user=user, instrument_id="RUB", using_db=conn
+                    )
                     if rub_balance is None:
                         raise InsufficientFundsError(
                             str(user.id), request.body.qty * request.body.price, 0
                         )
-                    maximum_to_buy = rub_balance.amount - await self.get_lock_rubs(user, conn)
+                    maximum_to_buy = rub_balance.amount - await self.get_lock_rubs(
+                        user, conn
+                    )
                     if maximum_to_buy < request.body.qty * request.body.price:
                         raise InsufficientFundsError(
-                            str(user.id), request.body.qty * request.body.price, maximum_to_buy
+                            str(user.id),
+                            request.body.qty * request.body.price,
+                            maximum_to_buy,
                         )
 
                 order_data = {

@@ -78,7 +78,7 @@ async def test_limit_buy_order_trading_partial_fill(
     assert buy_order.filled == transaction_amount
     assert sell_order.filled == transaction_amount
     assert sell_order.status == OrderStatus.EXECUTED
-    assert buy_order.status == OrderStatus.NEW
+    assert buy_order.status == OrderStatus.PARTIALLY_EXECUTED
 
     assert (
         seller_rub_balance.amount
@@ -152,7 +152,7 @@ async def test_limit_buy_order_trading_with_yourself_partial_fill(
     assert buy_order.filled == 5
     assert sell_order.filled == 5
     assert sell_order.status == OrderStatus.EXECUTED
-    assert buy_order.status == OrderStatus.NEW
+    assert buy_order.status == OrderStatus.PARTIALLY_EXECUTED
 
     # Trading with yourself => balance does not change
     assert instrument_balance.amount == instrument_init_balance

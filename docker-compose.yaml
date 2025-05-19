@@ -87,6 +87,8 @@ services:
       - additional
       - redis
       - db
+    volumes:
+      - logs:/app/logs
     restart: always
     environment:
       - SERVER_PORT=5000
@@ -97,3 +99,4 @@ services:
 volumes:
   pgdata:
   redisdata:
+  logs:

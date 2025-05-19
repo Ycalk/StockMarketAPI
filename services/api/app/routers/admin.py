@@ -1,3 +1,4 @@
+import time
 from fastapi import APIRouter, HTTPException
 from microkit import MicroKitClient
 from ..config import RedisConfig
@@ -9,6 +10,7 @@ from shared_models.users.delete_user import DeleteUserRequest, DeleteUserRespons
 from shared_models.users.deposit import DepositRequest
 from shared_models.users.withdraw import WithdrawRequest
 from ..models.user import User as UserAPIModel
+from ..logging import get_logger, log_action
 from ..models.response_status import ResponseStatus
 from ..services.token import verify_admin_api_key
 from fastapi import Depends
@@ -26,6 +28,7 @@ from shared_models.users.errors import UserNotFoundError, InsufficientFundsError
 router = APIRouter(prefix="/admin", tags=["admin"])
 instruments_client = MicroKitClient(RedisConfig.REDIS_SETTINGS, "Instruments")
 users_client = MicroKitClient(RedisConfig.REDIS_SETTINGS, "Users")
+logger = get_logger("admin")
 
 
 @router.delete(
@@ -39,18 +42,26 @@ users_client = MicroKitClient(RedisConfig.REDIS_SETTINGS, "Users")
     },
 )
 async def delete_user(user_id: UUID, _: None = Depends(verify_admin_api_key)):
+    start = time.time()
     job = await users_client("delete_user", DeleteUserRequest(id=user_id))
     if job is None:
         raise HTTPException(500, "Cannot create job")
     try:
         model: DeleteUserResponse = await job.result(timeout=10)
+        result = "200 (OK)"
         return UserAPIModel(**model.user.model_dump())
     except asyncio.TimeoutError:
+        result = "408 (Request Timeout)"
         raise HTTPException(status_code=408, detail="Request Timeout")
     except UserNotFoundError as e:
+        result = "404 (User Not Found)"
         raise HTTPException(status_code=404, detail=e.message)
     except UserCriticalError as e:
+        result = "500 (Critical Error)"
         raise HTTPException(status_code=500, detail=e.message)
+    finally:
+        duration = time.time() - start
+        log_action("DELETE USER", str(user_id), result, duration, logger)
 
 
 @router.post(
@@ -65,6 +76,7 @@ async def delete_user(user_id: UUID, _: None = Depends(verify_admin_api_key)):
 async def create_instrument(
     request: InstrumentSharedModel, _: None = Depends(verify_admin_api_key)
 ):
+    start = time.time()
     job = await instruments_client(
         "add_instrument", AddInstrumentRequest(instrument=request)
     )
@@ -72,13 +84,20 @@ async def create_instrument(
         raise HTTPException(500, "Cannot create job")
     try:
         await job.result(timeout=10)
+        result = "200 (OK)"
         return ResponseStatus(success=True)
     except InstrumentAlreadyExistsError:
+        result = "409 (Instrument Already Exists)"
         raise HTTPException(status_code=409, detail="Instrument already exists")
     except asyncio.TimeoutError:
+        result = "408 (Request Timeout)"
         raise HTTPException(status_code=408, detail="Request Timeout")
     except InstrumentCriticalError as e:
+        result = "500 (Critical Error)"
         raise HTTPException(status_code=500, detail=e.message)
+    finally:
+        duration = time.time() - start
+        log_action("CREATE INSTRUMENT", request.ticker, result, duration, logger)
 
 
 @router.delete(
@@ -91,6 +110,7 @@ async def create_instrument(
     },
 )
 async def delete_instrument(ticker: str, _: None = Depends(verify_admin_api_key)):
+    start = time.time()
     job = await instruments_client(
         "delete_instrument", DeleteInstrumentRequest(ticker=ticker)
     )
@@ -98,13 +118,21 @@ async def delete_instrument(ticker: str, _: None = Depends(verify_admin_api_key)
         raise HTTPException(500, "Cannot create job")
     try:
         await job.result(timeout=10)
+        result = "200 (OK)"
         return ResponseStatus(success=True)
     except InstrumentNotFoundError:
+        result = "404 (Instrument Not Found)"
         raise HTTPException(status_code=404, detail="Instrument not found")
     except asyncio.TimeoutError:
+        result = "408 (Request Timeout)"
         raise HTTPException(status_code=408, detail="Request Timeout")
     except InstrumentCriticalError as e:
+        result = "500 (Critical Error)"
         raise HTTPException(status_code=500, detail=e.message)
+    finally:
+        duration = time.time() - start
+        log_action("DELETE INSTRUMENT", ticker, result, duration, logger)
+
 
 @router.post(
     "/balance/deposit",
@@ -117,20 +145,30 @@ async def delete_instrument(ticker: str, _: None = Depends(verify_admin_api_key)
     },
 )
 async def deposit(request: DepositRequest, _: None = Depends(verify_admin_api_key)):
+    start = time.time()
     job = await users_client("deposit", request)
     if job is None:
         raise HTTPException(500, "Cannot create job")
     try:
         await job.result(timeout=10)
+        result = "200 (OK)"
         return ResponseStatus(success=True)
     except UserNotFoundError:
+        result = "404 (User Not Found)"
         raise HTTPException(status_code=404, detail="User not found")
     except InstrumentNotFoundError:
+        result = "404 (Instrument Not Found)"
         raise HTTPException(status_code=404, detail="Instrument not found")
     except asyncio.TimeoutError:
+        result = "408 (Request Timeout)"
         raise HTTPException(status_code=408, detail="Request Timeout")
     except UserCriticalError as e:
+        result = "500 (Critical Error)"
         raise HTTPException(status_code=500, detail=e.message)
+    finally:
+        duration = time.time() - start
+        identifier = f"{request.amount} {request.ticker} to {request.user_id}"
+        log_action("DEPOSIT", identifier, result, duration, logger)
 
 
 @router.post(
@@ -145,19 +183,30 @@ async def deposit(request: DepositRequest, _: None = Depends(verify_admin_api_ke
     },
 )
 async def withdraw(request: WithdrawRequest, _: None = Depends(verify_admin_api_key)):
+    start = time.time()
     job = await users_client("withdraw", request)
     if job is None:
         raise HTTPException(500, "Cannot create job")
     try:
         await job.result(timeout=10)
+        result = "200 (OK)"
         return ResponseStatus(success=True)
     except UserNotFoundError:
+        result = "404 (User Not Found)"
         raise HTTPException(status_code=404, detail="User not found")
     except InstrumentNotFoundError:
+        result = "404 (Instrument Not Found)"
         raise HTTPException(status_code=404, detail="Instrument not found")
     except InsufficientFundsError:
+        result = "403 (Insufficient Funds)"
         raise HTTPException(status_code=403, detail="Insufficient funds")
     except asyncio.TimeoutError:
+        result = "408 (Request Timeout)"
         raise HTTPException(status_code=408, detail="Request Timeout")
     except UserCriticalError as e:
+        result = "500 (Critical Error)"
         raise HTTPException(status_code=500, detail=e.message)
+    finally:
+        duration = time.time() - start
+        identifier = f"{request.amount} {request.ticker} from {request.user_id}"
+        log_action("WITHDRAW", identifier, result, duration, logger)

@@ -1,3 +1,4 @@
+import time
 from fastapi import APIRouter, HTTPException
 from ..models.public import RegisterUserRequest
 from ..models.user import User as UserAPIModel
@@ -19,12 +20,14 @@ from shared_models.orders.requests.get_transactions import (
 )
 from shared_models.orders.errors import CriticalError as OrdersCriticalError
 from shared_models.instruments.errors import InstrumentNotFoundError
+from ..logging import get_logger, log_action
 
 
 router = APIRouter(prefix="/public", tags=["public"])
 users_client = MicroKitClient(RedisConfig.REDIS_SETTINGS, "Users")
 instruments_client = MicroKitClient(RedisConfig.REDIS_SETTINGS, "Instruments")
 orders_client = MicroKitClient(RedisConfig.REDIS_SETTINGS, "Orders")
+logger = get_logger("public")
 
 
 @router.post(
@@ -33,16 +36,23 @@ orders_client = MicroKitClient(RedisConfig.REDIS_SETTINGS, "Orders")
     responses={500: {"model": ErrorResponse, "description": "Internal Server Error"}, 408: {"model": ErrorResponse, "description": "Request Timeout"}},
 )
 async def register_user(request: RegisterUserRequest):
+    start = time.time()
     job = await users_client("create_user", CreateUserRequest(**request.model_dump()))
     if job is None:
         raise HTTPException(500, "Cannot create job")
     try:
         model: CreateUserResponse = await job.result(timeout=10)
+        result = f"200 (OK): {model.user.id}"
         return UserAPIModel(**model.user.model_dump())
     except asyncio.TimeoutError:
+        result = "408 (Request Timeout)"
         raise HTTPException(status_code=408, detail="Request Timeout")
     except UserCriticalError as e:
+        result = "500 (Critical Error)"
         raise HTTPException(status_code=500, detail=e.message)
+    finally:
+        duration = time.time() - start
+        log_action("REGISTER USER", request.name, result, duration, logger)
 
 
 @router.get(
@@ -51,15 +61,22 @@ async def register_user(request: RegisterUserRequest):
     responses={500: {"model": ErrorResponse, "description": "Internal Server Error"}, 408: {"model": ErrorResponse, "description": "Request Timeout"}},
 )
 async def get_instruments():
+    start = time.time()
     job = await instruments_client("get_instruments")
     if job is None:
         raise HTTPException(500, "Cannot create job")
     try:
+        result = "200 (OK)"
         return await job.result(timeout=10)
     except asyncio.TimeoutError:
+        result = "408 (Request Timeout)"
         raise HTTPException(status_code=408, detail="Request Timeout")
     except InstrumentCriticalError as e:
+        result = "500 (Critical Error)"
         raise HTTPException(status_code=500, detail=e.message)
+    finally:
+        duration = time.time() - start
+        log_action("GET INSTRUMENTS", "", result, duration, logger)
 
 
 @router.get(
@@ -72,19 +89,27 @@ async def get_instruments():
     },
 )
 async def get_orderbook(ticker: str, limit: int = 10):
+    start = time.time()
     job = await orders_client(
         "get_orderbook", GetOrderbookRequest(ticker=ticker, limit=limit)
     )
     if job is None:
         raise HTTPException(500, "Cannot create job")
     try:
+        result = "200 (OK)"
         return await job.result(timeout=10)
     except InstrumentNotFoundError as e:
+        result = "404 (Orderbook Not Found)"
         raise HTTPException(status_code=404, detail=e.message)
     except asyncio.TimeoutError:
+        result = "408 (Request Timeout)"
         raise HTTPException(status_code=408, detail="Request Timeout")
     except OrdersCriticalError as e:
+        result = "500 (Critical Error)"
         raise HTTPException(status_code=500, detail=e.message)
+    finally:
+        duration = time.time() - start
+        log_action("GET ORDERBOOK", ticker, result, duration, logger)
 
 
 @router.get(
@@ -97,16 +122,24 @@ async def get_orderbook(ticker: str, limit: int = 10):
     },
 )
 async def get_transactions(ticker: str, limit: int = 10):
+    start = time.time()
     job = await orders_client(
         "get_transactions", GetTransactionsRequest(ticker=ticker, limit=limit)
     )
     if job is None:
         raise HTTPException(500, "Cannot create job")
     try:
+        result = "200 (OK)"
         return await job.result(timeout=10)
     except InstrumentNotFoundError as e:
+        result = "404 (Instrument Not Found)"
         raise HTTPException(status_code=404, detail=e.message)
     except asyncio.TimeoutError:
+        result = "408 (Request Timeout)"
         raise HTTPException(status_code=408, detail="Request Timeout")
     except OrdersCriticalError as e:
+        result = "500 (Critical Error)"
         raise HTTPException(status_code=500, detail=e.message)
+    finally:
+        duration = time.time() - start
+        log_action("GET TRANSACTIONS", ticker, result, duration, logger)

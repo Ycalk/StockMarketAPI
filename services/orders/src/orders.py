@@ -351,9 +351,12 @@ class Orders(Service):
                 ),
             )
         else:
+            order_status = SharedModelOrderStatus(database_model.status)
+            if order_status == SharedModelOrderStatus.NEW and database_model.filled != 0:
+                order_status = SharedModelOrderStatus.PARTIALLY_EXECUTED
             return LimitOrder(
                 id=database_model.id,
-                status=SharedModelOrderStatus(database_model.status.value),
+                status=order_status,
                 user_id=database_model.user.id,
                 timestamp=database_model.created_at,
                 body=LimitOrderBody(

@@ -88,7 +88,7 @@ async def create_instrument(
         return ResponseStatus(success=True)
     except InstrumentAlreadyExistsError:
         result = "409 (Instrument Already Exists)"
-        return ResponseStatus(success=False)
+        raise HTTPException(status_code=409, detail="Instrument already exists")
     except asyncio.TimeoutError:
         result = "408 (Request Timeout)"
         raise HTTPException(status_code=408, detail="Request Timeout")

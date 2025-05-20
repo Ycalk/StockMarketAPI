@@ -47,7 +47,7 @@ async def delete_user(user_id: UUID, _: None = Depends(verify_admin_api_key)):
     if job is None:
         raise HTTPException(500, "Cannot create job")
     try:
-        model: DeleteUserResponse = await job.result(timeout=10)
+        model: DeleteUserResponse = await job.result(timeout=10, poll_delay=0.1)
         result = "200 (OK)"
         return UserAPIModel(**model.user.model_dump())
     except asyncio.TimeoutError:
@@ -83,7 +83,7 @@ async def create_instrument(
     if job is None:
         raise HTTPException(500, "Cannot create job")
     try:
-        await job.result(timeout=10)
+        await job.result(timeout=10, poll_delay=0.1)
         result = "200 (OK)"
         return ResponseStatus(success=True)
     except InstrumentAlreadyExistsError:
@@ -117,7 +117,7 @@ async def delete_instrument(ticker: str, _: None = Depends(verify_admin_api_key)
     if job is None:
         raise HTTPException(500, "Cannot create job")
     try:
-        await job.result(timeout=10)
+        await job.result(timeout=10, poll_delay=0.1)
         result = "200 (OK)"
         return ResponseStatus(success=True)
     except InstrumentNotFoundError:
@@ -150,7 +150,7 @@ async def deposit(request: DepositRequest, _: None = Depends(verify_admin_api_ke
     if job is None:
         raise HTTPException(500, "Cannot create job")
     try:
-        await job.result(timeout=10)
+        await job.result(timeout=10, poll_delay=0.1)
         result = "200 (OK)"
         return ResponseStatus(success=True)
     except UserNotFoundError:
@@ -188,7 +188,7 @@ async def withdraw(request: WithdrawRequest, _: None = Depends(verify_admin_api_
     if job is None:
         raise HTTPException(500, "Cannot create job")
     try:
-        await job.result(timeout=10)
+        await job.result(timeout=10, poll_delay=0.1)
         result = "200 (OK)"
         return ResponseStatus(success=True)
     except UserNotFoundError:

@@ -29,6 +29,7 @@ class Runner:
         keep_result_forever: bool = False,
         max_tries: int = 5,
         retry_jobs: bool = True,
+        poll_delay: float = 0.5,
         logging_config: Optional[dict[str, Any]] = None,
     ) -> None:
         """
@@ -67,6 +68,7 @@ class Runner:
         self._keep_result_forever = keep_result_forever
         self._max_tries = max_tries
         self._retry_jobs = retry_jobs
+        self._poll_delay = poll_delay
         self.logging_config = logging_config or default_log_config(verbose=True)
         self.logger = logging.getLogger("microkit")
 
@@ -92,6 +94,7 @@ class Runner:
             retry_jobs=self._retry_jobs,
             on_startup=Runner._startup,
             on_shutdown=Runner._shutdown,
+            poll_delay=self._poll_delay,
             ctx={"self": self._service},
         )
         worker.run()

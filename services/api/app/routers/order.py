@@ -17,7 +17,7 @@ from shared_models.orders.requests.create_order import (
     CreateOrderRequest,
     CreateOrderResponse,
 )
-from shared_models.orders.errors import CriticalError as OrdersCriticalError
+from shared_models.orders.errors import CriticalError as OrdersCriticalError, CannotCancelOrderError
 from shared_models.orders.models.orders_bodies import LimitOrderBody, MarketOrderBody
 from ..models.create_order import CreateOrderResponse as CreateOrderAPIResponse
 from ..models.error import ErrorResponse
@@ -154,6 +154,7 @@ async def get_order(order_id: UUID, user_id: UUID = Depends(verify_user_api_key)
         500: {"model": ErrorResponse, "description": "Internal Server Error"},
         408: {"model": ErrorResponse, "description": "Request Timeout"},
         404: {"model": ErrorResponse, "description": "Order not found"},
+        400: {"model": ErrorResponse, "description": "Cannot Cancel Order"},
     },
 )
 async def cancel_order(order_id: UUID, user_id: UUID = Depends(verify_user_api_key)):
@@ -167,6 +168,9 @@ async def cancel_order(order_id: UUID, user_id: UUID = Depends(verify_user_api_k
         await job.result(timeout=10, poll_delay=ApiServiceConfig.DEFAULT_POLL_DELAY)
         result = "200 (OK)"
         return ResponseStatus(success=True)
+    except CannotCancelOrderError as e:
+        result = "400 (Cannot Cancel Order)"
+        raise HTTPException(status_code=400, detail=str(e))
     except OrderNotFoundError:
         result = "404 (Order Not Found)"
         raise HTTPException(status_code=404, detail="Order not found")

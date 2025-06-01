@@ -352,7 +352,10 @@ class Orders(Service):
             )
         else:
             order_status = SharedModelOrderStatus(database_model.status)
-            if order_status == SharedModelOrderStatus.NEW and database_model.filled != 0:
+            if (
+                order_status == SharedModelOrderStatus.NEW
+                and database_model.filled != 0
+            ):
                 order_status = SharedModelOrderStatus.PARTIALLY_EXECUTED
             return LimitOrder(
                 id=database_model.id,

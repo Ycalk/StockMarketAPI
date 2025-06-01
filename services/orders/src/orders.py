@@ -590,7 +590,7 @@ class Orders(Service):
                             price=tx.price,
                             timestamp=tx.executed_at,
                         )
-                        for tx in transactions
+                        for tx in transactions[:request.limit]
                     ]
                 )
             except InstrumentNotFoundError as ve:

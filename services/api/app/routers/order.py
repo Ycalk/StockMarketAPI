@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from microkit import MicroKitClient
-from ..config import RedisConfig
+from ..config import RedisConfig, ApiServiceConfig
 from typing import Union
 import asyncio
 from shared_models.orders.requests.list_orders import (
@@ -53,7 +53,7 @@ async def create_order(
     if job is None:
         raise HTTPException(500, "Cannot create job")
     try:
-        response: CreateOrderResponse = await job.result(timeout=10, poll_delay=0.1)
+        response: CreateOrderResponse = await job.result(timeout=10, poll_delay=ApiServiceConfig.DEFAULT_POLL_DELAY)
         result = "200 (OK)"
         return CreateOrderAPIResponse(success=True, order_id=response.order_id)
     except UserNotFoundError:
@@ -99,7 +99,7 @@ async def list_orders(user_id: UUID = Depends(verify_user_api_key)):
         raise HTTPException(500, "Cannot create job")
     try:
         result = "200 (OK)"
-        return await job.result(timeout=10, poll_delay=0.1)
+        return await job.result(timeout=10, poll_delay=ApiServiceConfig.DEFAULT_POLL_DELAY)
     except UserNotFoundError:
         result = "404 (User Not Found)"
         raise HTTPException(status_code=404, detail="User not found")
@@ -132,7 +132,7 @@ async def get_order(order_id: UUID, user_id: UUID = Depends(verify_user_api_key)
         raise HTTPException(500, "Cannot create job")
     try:
         result = "200 (OK)"
-        return await job.result(timeout=10, poll_delay=0.1)
+        return await job.result(timeout=10, poll_delay=ApiServiceConfig.DEFAULT_POLL_DELAY)
     except OrderNotFoundError:
         result = "404 (Order Not Found)"
         raise HTTPException(status_code=404, detail="Order not found")
@@ -164,7 +164,7 @@ async def cancel_order(order_id: UUID, user_id: UUID = Depends(verify_user_api_k
     if job is None:
         raise HTTPException(500, "Cannot create job")
     try:
-        await job.result(timeout=10, poll_delay=0.1)
+        await job.result(timeout=10, poll_delay=ApiServiceConfig.DEFAULT_POLL_DELAY)
         result = "200 (OK)"
         return ResponseStatus(success=True)
     except OrderNotFoundError:

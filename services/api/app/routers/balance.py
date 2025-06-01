@@ -4,7 +4,7 @@ from microkit import MicroKitClient
 from uuid import UUID
 from shared_models.users.get_balance import GetBalanceRequest, GetBalanceResponse
 from shared_models.users.errors import CriticalError, UserNotFoundError
-from ..config import RedisConfig
+from ..config import RedisConfig, ApiServiceConfig
 from ..services.token import verify_user_api_key
 from ..models.error import ErrorResponse
 from ..logging import log_action
@@ -31,7 +31,7 @@ async def get_balance(user_id: UUID = Depends(verify_user_api_key)):
         raise HTTPException(500, "Cannot create job")
     try:
         result = "200 (OK)"
-        return await job.result(timeout=10, poll_delay=0.1)
+        return await job.result(timeout=10, poll_delay=ApiServiceConfig.DEFAULT_POLL_DELAY)
     except asyncio.TimeoutError:
         result = "408 (Request Timeout)"
         raise HTTPException(status_code=408, detail="Request Timeout")

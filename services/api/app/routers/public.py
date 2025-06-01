@@ -4,7 +4,7 @@ from ..models.public import RegisterUserRequest
 from ..models.user import User as UserAPIModel
 from ..models.error import ErrorResponse
 from microkit.client import MicroKitClient
-from ..config import RedisConfig
+from ..config import RedisConfig, ApiServiceConfig
 from shared_models.users.create_user import CreateUserRequest, CreateUserResponse
 from shared_models.instruments.get_instruments import GetInstrumentsResponse
 import asyncio
@@ -44,7 +44,7 @@ async def register_user(request: RegisterUserRequest):
     if job is None:
         raise HTTPException(500, "Cannot create job")
     try:
-        model: CreateUserResponse = await job.result(timeout=10, poll_delay=0.1)
+        model: CreateUserResponse = await job.result(timeout=10, poll_delay=ApiServiceConfig.DEFAULT_POLL_DELAY)
         result = f"200 (OK): {model.user.id}"
         return UserAPIModel(**model.user.model_dump())
     except asyncio.TimeoutError:
@@ -73,7 +73,7 @@ async def get_instruments():
         raise HTTPException(500, "Cannot create job")
     try:
         result = "200 (OK)"
-        return await job.result(timeout=10, poll_delay=0.1)
+        return await job.result(timeout=10, poll_delay=ApiServiceConfig.DEFAULT_POLL_DELAY)
     except asyncio.TimeoutError:
         result = "408 (Request Timeout)"
         raise HTTPException(status_code=408, detail="Request Timeout")
@@ -103,7 +103,7 @@ async def get_orderbook(ticker: str, limit: int = 10):
         raise HTTPException(500, "Cannot create job")
     try:
         result = "200 (OK)"
-        return await job.result(timeout=10, poll_delay=0.1)
+        return await job.result(timeout=10, poll_delay=ApiServiceConfig.DEFAULT_POLL_DELAY)
     except InstrumentNotFoundError as e:
         result = "404 (Orderbook Not Found)"
         raise HTTPException(status_code=404, detail=e.message)
@@ -136,7 +136,7 @@ async def get_transactions(ticker: str, limit: int = 10):
         raise HTTPException(500, "Cannot create job")
     try:
         result = "200 (OK)"
-        return await job.result(timeout=10, poll_delay=0.1)
+        return await job.result(timeout=10, poll_delay=ApiServiceConfig.DEFAULT_POLL_DELAY)
     except InstrumentNotFoundError as e:
         result = "404 (Instrument Not Found)"
         raise HTTPException(status_code=404, detail=e.message)

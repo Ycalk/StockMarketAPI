@@ -39,7 +39,7 @@ services:
       - db
     restart: always
     environment:
-      - WORKERS_COUNT=5
+      - WORKERS_COUNT=2
     env_file:
       - services.env
   
@@ -71,7 +71,7 @@ services:
       - db
     restart: always
     environment:
-      - WORKERS_COUNT=5
+      - WORKERS_COUNT=2
     env_file:
       - services.env
   

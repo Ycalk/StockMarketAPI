@@ -17,6 +17,6 @@ if __name__ == "__main__":
         logging_config=logging_config,
         redis_settings=RedisSettings(Config.REDIS_HOST, Config.REDIS_PORT),
         workers_count=Config.WORKERS_COUNT,
-        poll_delay=0.1,
+        poll_delay=0.001,
     )
     runner.run()

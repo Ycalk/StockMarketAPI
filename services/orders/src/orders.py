@@ -26,6 +26,7 @@ from shared_models.orders.errors import (
     CriticalError,
     OrderNotFoundError,
     CannotCancelOrderError,
+    MarketOrderNotExecutedError
 )
 from shared_models.orders.requests.create_order import (
     CreateOrderRequest,
@@ -443,11 +444,16 @@ class Orders(Service):
             lock = redis.lock(f"lock:orders:{request.body.ticker}", timeout=5)
             async with lock:
                 await self.execute_orders(request.body.ticker)
+            if order.type == DatabaseOrderType.MARKET:
+                order = await Order.get(id=order.id)
+                if order.filled == 0:
+                    raise MarketOrderNotExecutedError(f"Market order with ID {order.id} was not executed")
             return CreateOrderResponse(order_id=order.id)
         except (
             UserNotFoundError,
             InstrumentNotFoundError,
             InsufficientFundsError,
+            MarketOrderNotExecutedError,
         ) as ve:
             self.logger.error(f"Validation error: {ve}")
             raise

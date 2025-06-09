@@ -20,6 +20,7 @@ from shared_models.orders.requests.create_order import (
 from shared_models.orders.errors import (
     CriticalError as OrdersCriticalError,
     CannotCancelOrderError,
+    MarketOrderNotExecutedError
 )
 from shared_models.orders.models.orders_bodies import LimitOrderBody, MarketOrderBody
 from ..models.create_order import CreateOrderResponse as CreateOrderAPIResponse
@@ -61,6 +62,9 @@ async def create_order(
         )
         result = "200 (OK)"
         return CreateOrderAPIResponse(success=True, order_id=response.order_id)
+    except MarketOrderNotExecutedError:
+        result = "409 (Market Order Not Executed)"
+        raise HTTPException(status_code=409, detail="Market order not executed")
     except UserNotFoundError:
         result = "404 (User Not Found)"
         raise HTTPException(status_code=404, detail="User not found")

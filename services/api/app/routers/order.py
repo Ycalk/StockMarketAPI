@@ -20,7 +20,7 @@ from shared_models.orders.requests.create_order import (
 from shared_models.orders.errors import (
     CriticalError as OrdersCriticalError,
     CannotCancelOrderError,
-    MarketOrderNotExecutedError
+    MarketOrderNotExecutedError,
 )
 from shared_models.orders.models.orders_bodies import LimitOrderBody, MarketOrderBody
 from ..models.create_order import CreateOrderResponse as CreateOrderAPIResponse

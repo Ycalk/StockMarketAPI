@@ -26,7 +26,7 @@ from shared_models.orders.errors import (
     CriticalError,
     OrderNotFoundError,
     CannotCancelOrderError,
-    MarketOrderNotExecutedError
+    MarketOrderNotExecutedError,
 )
 from shared_models.orders.requests.create_order import (
     CreateOrderRequest,
@@ -447,7 +447,9 @@ class Orders(Service):
             if order.type == DatabaseOrderType.MARKET:
                 order = await Order.get(id=order.id)
                 if order.filled == 0:
-                    raise MarketOrderNotExecutedError(f"Market order with ID {order.id} was not executed")
+                    raise MarketOrderNotExecutedError(
+                        f"Market order with ID {order.id} was not executed"
+                    )
             return CreateOrderResponse(order_id=order.id)
         except (
             UserNotFoundError,

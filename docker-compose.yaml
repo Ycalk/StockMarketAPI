@@ -55,7 +55,7 @@ services:
       - db
     restart: always
     environment:
-      - WORKERS_COUNT=10
+      - WORKERS_COUNT=3
     env_file:
       - services.env
   
@@ -92,7 +92,7 @@ services:
     restart: always
     environment:
       - SERVER_PORT=5000
-      - WORKERS_COUNT=3
+      - WORKERS_COUNT=2
     env_file:
       - services.env
       - secrets.env

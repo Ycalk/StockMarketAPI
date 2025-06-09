@@ -22,7 +22,11 @@ from shared_models.orders.models.orders_bodies.direction import (
     Direction as SharedModelOrderDirection,
 )
 from shared_models.orders.models import LimitOrder, MarketOrder
-from shared_models.orders.errors import CriticalError, OrderNotFoundError, CannotCancelOrderError
+from shared_models.orders.errors import (
+    CriticalError,
+    OrderNotFoundError,
+    CannotCancelOrderError,
+)
 from shared_models.orders.requests.create_order import (
     CreateOrderRequest,
     CreateOrderResponse,
@@ -509,8 +513,13 @@ class Orders(Service):
                     raise OrderNotFoundError(str(request.order_id))
                 if order.type == DatabaseOrderType.MARKET:
                     raise CannotCancelOrderError("Market orders cannot be cancelled")
-                if order.status in (DatabaseOrderStatus.EXECUTED, DatabaseOrderStatus.PARTIALLY_EXECUTED):
-                    raise CannotCancelOrderError("Orders with status EXECUTED or PARTIALLY_EXECUTED cannot be cancelled")
+                if order.status in (
+                    DatabaseOrderStatus.EXECUTED,
+                    DatabaseOrderStatus.PARTIALLY_EXECUTED,
+                ):
+                    raise CannotCancelOrderError(
+                        "Orders with status EXECUTED or PARTIALLY_EXECUTED cannot be cancelled"
+                    )
                 if order.status == DatabaseOrderStatus.CANCELLED:
                     raise CannotCancelOrderError("Order is already cancelled")
                 order.status = DatabaseOrderStatus.CANCELLED
@@ -596,7 +605,7 @@ class Orders(Service):
                             price=tx.price,
                             timestamp=tx.executed_at,
                         )
-                        for tx in transactions[:request.limit]
+                        for tx in transactions[: request.limit]
                     ]
                 )
             except InstrumentNotFoundError as ve:

@@ -47,7 +47,9 @@ async def delete_user(user_id: UUID, _: None = Depends(verify_admin_api_key)):
     if job is None:
         raise HTTPException(500, "Cannot create job")
     try:
-        model: DeleteUserResponse = await job.result(timeout=10, poll_delay=ApiServiceConfig.DEFAULT_POLL_DELAY)
+        model: DeleteUserResponse = await job.result(
+            timeout=10, poll_delay=ApiServiceConfig.DEFAULT_POLL_DELAY
+        )
         result = "200 (OK)"
         return UserAPIModel(**model.user.model_dump())
     except asyncio.TimeoutError:

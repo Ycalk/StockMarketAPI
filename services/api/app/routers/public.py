@@ -44,7 +44,9 @@ async def register_user(request: RegisterUserRequest):
     if job is None:
         raise HTTPException(500, "Cannot create job")
     try:
-        model: CreateUserResponse = await job.result(timeout=10, poll_delay=ApiServiceConfig.DEFAULT_POLL_DELAY)
+        model: CreateUserResponse = await job.result(
+            timeout=10, poll_delay=ApiServiceConfig.DEFAULT_POLL_DELAY
+        )
         result = f"200 (OK): {model.user.id}"
         return UserAPIModel(**model.user.model_dump())
     except asyncio.TimeoutError:
@@ -73,7 +75,9 @@ async def get_instruments():
         raise HTTPException(500, "Cannot create job")
     try:
         result = "200 (OK)"
-        return await job.result(timeout=10, poll_delay=ApiServiceConfig.DEFAULT_POLL_DELAY)
+        return await job.result(
+            timeout=10, poll_delay=ApiServiceConfig.DEFAULT_POLL_DELAY
+        )
     except asyncio.TimeoutError:
         result = "408 (Request Timeout)"
         raise HTTPException(status_code=408, detail="Request Timeout")
@@ -103,7 +107,9 @@ async def get_orderbook(ticker: str, limit: int = 10):
         raise HTTPException(500, "Cannot create job")
     try:
         result = "200 (OK)"
-        return await job.result(timeout=10, poll_delay=ApiServiceConfig.DEFAULT_POLL_DELAY)
+        return await job.result(
+            timeout=10, poll_delay=ApiServiceConfig.DEFAULT_POLL_DELAY
+        )
     except InstrumentNotFoundError as e:
         result = "404 (Orderbook Not Found)"
         raise HTTPException(status_code=404, detail=e.message)
@@ -136,7 +142,9 @@ async def get_transactions(ticker: str, limit: int = 10):
         raise HTTPException(500, "Cannot create job")
     try:
         result = "200 (OK)"
-        return await job.result(timeout=10, poll_delay=ApiServiceConfig.DEFAULT_POLL_DELAY)
+        return await job.result(
+            timeout=10, poll_delay=ApiServiceConfig.DEFAULT_POLL_DELAY
+        )
     except InstrumentNotFoundError as e:
         result = "404 (Instrument Not Found)"
         raise HTTPException(status_code=404, detail=e.message)

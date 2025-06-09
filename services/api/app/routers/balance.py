@@ -31,7 +31,9 @@ async def get_balance(user_id: UUID = Depends(verify_user_api_key)):
         raise HTTPException(500, "Cannot create job")
     try:
         result = "200 (OK)"
-        return await job.result(timeout=10, poll_delay=ApiServiceConfig.DEFAULT_POLL_DELAY)
+        return await job.result(
+            timeout=10, poll_delay=ApiServiceConfig.DEFAULT_POLL_DELAY
+        )
     except asyncio.TimeoutError:
         result = "408 (Request Timeout)"
         raise HTTPException(status_code=408, detail="Request Timeout")

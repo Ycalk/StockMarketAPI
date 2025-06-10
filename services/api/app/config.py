@@ -13,7 +13,7 @@ class ApiServiceConfig:
         200: {"description": "Successful Response"}
     }
     LOGS_FOLDER = "logs"
-    DEFAULT_POLL_DELAY = 0.0001
+    DEFAULT_POLL_DELAY = 0.001
 
 
 class RedisConfig:

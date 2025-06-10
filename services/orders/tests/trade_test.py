@@ -11,6 +11,7 @@ from shared_models.orders.models.orders_bodies.direction import (
 from shared_models.orders.models.order_status import OrderStatus
 from shared_models.orders.requests.get_order import GetOrderRequest
 from shared_models.users.errors import InsufficientFundsError
+from shared_models.orders.errors import MarketOrderNotExecutedError
 
 
 @pytest.mark.asyncio
@@ -433,3 +434,22 @@ async def test_market_sell_order_partial_fill(
 
     assert buyer_rub_balance.amount == 0
     assert seller_rub_balance.amount == 300
+
+
+@pytest.mark.asyncio
+async def test_raise_when_market_order_not_executed(
+    ctx: dict, instrument: Instrument, rub: Instrument, user: User
+):
+    await Balance.create(user=user, instrument=rub, amount=300)
+    with pytest.raises(MarketOrderNotExecutedError):
+        await Orders.create_order(
+            ctx,
+            CreateOrderRequest(
+                user_id=user.id,
+                body=MarketOrderBody(
+                    direction=SharedModelOrderDirection.BUY,
+                    ticker=instrument.ticker,
+                    qty=10,
+                ),
+            ),
+        )

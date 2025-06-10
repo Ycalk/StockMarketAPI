@@ -236,7 +236,11 @@ class Orders(Service):
                 else:
                     break
             if market_order.status != DatabaseOrderStatus.EXECUTED:
-                market_order.status = DatabaseOrderStatus.PARTIALLY_EXECUTED
+                market_order.status = (
+                    DatabaseOrderStatus.PARTIALLY_EXECUTED
+                    if market_order.filled > 0
+                    else DatabaseOrderStatus.CANCELLED
+                )
                 await market_order.save(using_db=context)  # type: ignore
 
     async def execute_limit_orders(
@@ -257,22 +261,14 @@ class Orders(Service):
             if buy_order.status != DatabaseOrderStatus.EXECUTED:
                 break
 
-    async def execute_orders(self, ticker: str) -> None:
+    async def execute_orders(
+        self, ticker: str, new_order_type: DatabaseOrderType
+    ) -> None:
         async with in_transaction() as conn:
             instrument = await Instrument.get_or_none(ticker=ticker, using_db=conn)
             if not instrument:
                 self.logger.warning(f"Instrument not found: {ticker}")
                 return
-            market_orders = (
-                await Order.filter(
-                    instrument=instrument,
-                    type=DatabaseOrderType.MARKET,
-                    status=DatabaseOrderStatus.NEW,
-                )
-                .using_db(conn)
-                .prefetch_related("instrument", "user")
-                .all()
-            )
 
             buy_orders = (
                 await Order.filter(
@@ -299,17 +295,27 @@ class Orders(Service):
                 .order_by("price")
                 .all()
             )
-
-            await self.execute_market_orders(
-                market_orders=market_orders,
-                buy_orders=buy_orders,
-                sell_orders=sell_orders,
-                context=conn,
-            )
-
-            await self.execute_limit_orders(
-                buy_orders=buy_orders, sell_orders=sell_orders, context=conn
-            )
+            if new_order_type == DatabaseOrderType.MARKET:
+                market_orders = (
+                    await Order.filter(
+                        instrument=instrument,
+                        type=DatabaseOrderType.MARKET,
+                        status=DatabaseOrderStatus.NEW,
+                    )
+                    .using_db(conn)
+                    .prefetch_related("instrument", "user")
+                    .all()
+                )
+                await self.execute_market_orders(
+                    market_orders=market_orders,
+                    buy_orders=buy_orders,
+                    sell_orders=sell_orders,
+                    context=conn,
+                )
+            else:
+                await self.execute_limit_orders(
+                    buy_orders=buy_orders, sell_orders=sell_orders, context=conn
+                )
 
     async def get_lock_balance(
         self, user: User, instrument: Instrument, context: TransactionContext
@@ -443,7 +449,7 @@ class Orders(Service):
                 order = await Order.create(using_db=conn, **order_data)
             lock = redis.lock(f"lock:orders:{request.body.ticker}", timeout=5)
             async with lock:
-                await self.execute_orders(request.body.ticker)
+                await self.execute_orders(request.body.ticker, order.type)
             if order.type == DatabaseOrderType.MARKET:
                 order = await Order.get(id=order.id)
                 if order.filled == 0:

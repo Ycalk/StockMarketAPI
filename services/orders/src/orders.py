@@ -102,11 +102,6 @@ class Orders(Service):
             )
             if buyer_rub_balance.amount < total_price:
                 raise CriticalError("User does not have enough RUB to self-trade")
-            buyer_balance.amount -= quantity
-            buyer_rub_balance.amount -= total_price
-
-            await buyer_balance.save(using_db=context)  # type: ignore
-            await buyer_rub_balance.save(using_db=context)  # type: ignore
         else:
             seller_balance = await Balance.get_or_none(
                 user=seller,
@@ -273,7 +268,7 @@ class Orders(Service):
             instrument = await Instrument.get_or_none(ticker=ticker, using_db=conn)
             if not instrument:
                 self.logger.warning(f"Instrument not found: {ticker}")
-                raise InstrumentNotFoundError(ticker)
+                return
 
             buy_orders = (
                 await Order.filter(
@@ -402,17 +397,16 @@ class Orders(Service):
                 if not user:
                     raise UserNotFoundError(str(request.user_id))
 
-                balance = (
-                    await Balance.filter(user=user, instrument=instrument)
-                    .using_db(conn)
-                    .first()
-                )
+                balance = await Balance.filter(user=user, instrument=instrument).first()
 
                 if request.body.direction == Direction.SELL:
                     if balance is None:
                         raise InsufficientFundsError(str(user.id), request.body.qty, 0)
-                    maximum_to_sell = balance.amount - await self.get_lock_balance(
-                        user, instrument, conn
+                    maximum_to_sell = (
+                        balance.amount
+                        - await self.get_lock_balance(user, instrument, conn)
+                        if balance
+                        else 0
                     )
                     if maximum_to_sell < request.body.qty:
                         raise InsufficientFundsError(

@@ -57,9 +57,7 @@ async def create_order(
     if job is None:
         raise HTTPException(500, "Cannot create job")
     try:
-        response: CreateOrderResponse = await job.result(
-            timeout=10, poll_delay=0.0001
-        )
+        response: CreateOrderResponse = await job.result(timeout=10, poll_delay=0.0001)
         result = "200 (OK)"
         return CreateOrderAPIResponse(success=True, order_id=response.order_id)
     except MarketOrderNotExecutedError:

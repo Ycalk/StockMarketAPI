@@ -459,6 +459,7 @@ class Orders(Service):
             if order.type == DatabaseOrderType.MARKET:
                 order = await Order.get(id=order.id)
                 if order.filled == 0:
+                    await order.delete()
                     raise MarketOrderNotExecutedError(
                         f"Market order with ID {order.id} was not executed"
                     )

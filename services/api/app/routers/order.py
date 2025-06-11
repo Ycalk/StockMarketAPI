@@ -58,7 +58,7 @@ async def create_order(
         raise HTTPException(500, "Cannot create job")
     try:
         response: CreateOrderResponse = await job.result(
-            timeout=10, poll_delay=0.0001
+            timeout=10, poll_delay=ApiServiceConfig.DEFAULT_POLL_DELAY
         )
         result = "200 (OK)"
         return CreateOrderAPIResponse(success=True, order_id=response.order_id)

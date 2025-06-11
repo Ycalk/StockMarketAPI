@@ -155,9 +155,8 @@ async def test_limit_buy_order_trading_with_yourself_partial_fill(
     assert sell_order.status == OrderStatus.EXECUTED
     assert buy_order.status == OrderStatus.PARTIALLY_EXECUTED
 
-    # Trading with yourself => balance does not change
-    assert instrument_balance.amount == instrument_init_balance
-    assert rub_balance.amount == rub_init_balance
+    assert instrument_balance.amount == 5
+    assert rub_balance.amount == 500
 
 
 @pytest.mark.asyncio

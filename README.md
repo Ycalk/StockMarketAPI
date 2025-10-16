@@ -11,7 +11,7 @@ Stock Market API - симулятор фондового рынка. Это ми
 - Деплоей через GitHub Actions
 
 # Демо
-[Документация OpenAPI](https://stock-market-api.cloudpub.ru/docs)
+[Документация OpenAPI](https://stock-market-api.ycalk.tech/docs)
 
 # Используемые технологии
 - FastAPI
@@ -30,3 +30,4 @@ Stock Market API - симулятор фондового рынка. Это ми
   - users/ # Сервис пользователей
   - orders/ # Сервис обработки ордеров
   - instruments/ # Сервис торговых инструментов
+
